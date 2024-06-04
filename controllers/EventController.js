@@ -1,4 +1,4 @@
-// import StatusCode from "../Enums/HttpStatusCodes.js";
+// import STATUSCODE from "../Enums/HttpStatusCodes.js";
 // import EventModel from "../models/EventModel.js";
 
 // const status = (code, message, next) => {
@@ -26,16 +26,16 @@
 
 //     // Validate required fields
 //     if (!eventName) {
-//       return status(StatusCode.BAD_REQUEST, "Event name is required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Event name is required", next);
 //     }
 //     if (!eventType) {
-//       return status(StatusCode.BAD_REQUEST, "Event type is required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Event type is required", next);
 //     }
 //     if (!description) {
-//       return status(StatusCode.BAD_REQUEST, "Description is required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Description is required", next);
 //     }
 //     if (!organiserName) {
-//       return status(StatusCode.BAD_REQUEST, "Organiser name is required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Organiser name is required", next);
 //     }
 //     if (
 //       !location ||
@@ -45,7 +45,7 @@
 //       !location.country
 //     ) {
 //       return status(
-//         StatusCode.BAD_REQUEST,
+//         STATUSCODE.BAD_REQUEST,
 //         "Complete location information is required",
 //         next
 //       );
@@ -57,37 +57,37 @@
 //       !date.lastDateOfRegistration
 //     ) {
 //       return status(
-//         StatusCode.BAD_REQUEST,
+//         STATUSCODE.BAD_REQUEST,
 //         "Complete date information is required",
 //         next
 //       );
 //     }
 //     if (!eligibilities) {
-//       return status(StatusCode.BAD_REQUEST, "Eligibilities are required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Eligibilities are required", next);
 //     }
 //     if (!rules) {
-//       return status(StatusCode.BAD_REQUEST, "Rules are required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Rules are required", next);
 //     }
 //     if (!ruleBook) {
-//       return status(StatusCode.BAD_REQUEST, "Rule book is required", next);
+//       return status(STATUSCODE.BAD_REQUEST, "Rule book is required", next);
 //     }
 //     if (!contact) {
 //       return status(
-//         StatusCode.BAD_REQUEST,
+//         STATUSCODE.BAD_REQUEST,
 //         "Contact information is required",
 //         next
 //       );
 //     }
 //     if (!registrationCharges) {
 //       return status(
-//         StatusCode.BAD_REQUEST,
+//         STATUSCODE.BAD_REQUEST,
 //         "Registration charges are required",
 //         next
 //       );
 //     }
 //     if (!uplodedBy) {
 //       return status(
-//         StatusCode.BAD_REQUEST,
+//         STATUSCODE.BAD_REQUEST,
 //         "Uploader information is required",
 //         next
 //       );
@@ -117,24 +117,10 @@
 //   }
 // };
 
-import StatusCode from "../Enums/HttpStatusCodes.js";
+import mongoose from "mongoose";
+import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import EventModel from "../models/EventModel.js";
-
-const validateFields = (fields, next) => {
-  fields.forEach((field) => {
-    if (!field.field) {
-      const err = new Error(field.message);
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
-    }
-  });
-};
-
-const status = (code, message, next) => {
-  const err = new Error(message);
-  err.statusCode = code;
-  return next(err);
-};
+import { sendError, validateFields } from "./ErrorHandler.js";
 
 export const createEvent = async (req, res, next) => {
   try {
@@ -199,7 +185,7 @@ export const createEvent = async (req, res, next) => {
     );
 
     if (!mongoose.Types.ObjectId.isValid(ruleBook)) {
-      status(StatusCode.BAD_REQUEST, "Rulebook is not vaild", next);
+      return sendError(STATUSCODE.BAD_REQUEST, "Rulebook is not vaild", next);
     }
 
     // Create new event
@@ -219,12 +205,16 @@ export const createEvent = async (req, res, next) => {
     });
 
     if (!newEvent) {
-      status(StatusCode.BAD_GATEWAY, "Error while creating event model", next);
+      sendError(
+        STATUSCODE.BAD_GATEWAY,
+        "Error while creating event model",
+        next
+      );
     }
 
     // Save event to database
     const savedEvent = await newEvent.save();
-    res.status(201).json(savedEvent);
+    res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);
   }

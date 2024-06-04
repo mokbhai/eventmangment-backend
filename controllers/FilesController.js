@@ -3,6 +3,8 @@ import path from "path";
 import File from "../models/FilesModel.js";
 import mongoose from "mongoose";
 import fs from "fs";
+import STATUSCODE from "../Enums/HttpStatusCodes.js";
+import { sendError } from "./ErrorHandler.js";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,9 +27,9 @@ export const uploadFile = (req, res) => {
 
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
-      return res.status(500).json(err);
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     } else if (err) {
-      return res.status(500).json(err);
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     }
 
     // Update the file data in MongoDB
@@ -49,10 +51,7 @@ export const uploadFile = (req, res) => {
         });
       })
       .catch((err) => {
-        console.log(err);
-        res.status(500).json({
-          error: err,
-        });
+        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
       });
   });
 };
@@ -69,10 +68,7 @@ export const downloadFile = (req, res) => {
       fs.createReadStream(file.file).pipe(res);
     })
     .catch((err) => {
-      console.log(err);
-      res.status(500).json({
-        error: err,
-      });
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     });
 };
 export const viewFile = (req, res) => {
@@ -84,9 +80,6 @@ export const viewFile = (req, res) => {
       res.redirect(`/${file.file}`);
     })
     .catch((err) => {
-      console.log(err);
-      res.status(500).json({
-        error: err,
-      });
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     });
 };

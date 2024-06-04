@@ -1,4 +1,4 @@
-const StatusCode = Object.freeze({
+const STATUSCODE = Object.freeze({
   CONTINUE: 100,
   SWITCHING_PROTOCOLS: 101,
   OK: 200,
@@ -41,7 +41,7 @@ const StatusCode = Object.freeze({
   HTTP_VERSION_NOT_SUPPORTED: 505,
 });
 
-export default StatusCode;
+export default STATUSCODE;
 
 // 100 Continue: The server has received the request headers, and the client should proceed to send the request body.
 // 101 Switching Protocols: The requester has asked the server to switch protocols.

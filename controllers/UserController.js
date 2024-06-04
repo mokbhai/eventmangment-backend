@@ -1,29 +1,35 @@
 import userModel from "../models/userModel.js";
 import mongoose from "mongoose";
-import StatusCode from "../Enums/HttpStatusCodes.js";
+import STATUSCODE from "../Enums/HttpStatusCodes.js";
+import { sendError, validateFields } from "./ErrorHandler.js";
 
 export const signup = async (req, res, next) => {
   const { fullname, email, password } = req.body;
 
   try {
-    if (!fullname || !email || !password) {
-      const err = new Error("Please Provide All Fields");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
-    }
+    validateFields(
+      [
+        { field: fullname, message: "Full name is required" },
+        { field: email, message: "Email is required" },
+        { field: password, message: "Password is required" },
+      ],
+      next
+    );
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      const err = new Error("Email already registered. Please login");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Email already registered. Please login",
+        next
+      );
     }
     if (!password || password.length < 6) {
-      const err = new Error(
-        "Password is required and should be at least 6 characters long"
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Password is required and should be at least 6 characters long",
+        next
       );
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
     }
     const user = await userModel.create({
       fullname,
@@ -32,7 +38,7 @@ export const signup = async (req, res, next) => {
     });
     //token
     const token = user.createJWT();
-    res.status(StatusCode.CREATED).send({
+    res.status(STATUSCODE.CREATED).send({
       success: true,
       message: "User created successfully",
       user: {
@@ -48,48 +54,45 @@ export const signup = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
-  // Validation
-  if (!email || !password) {
-    const err = new Error("Please Provide All Fields");
-    err.statusCode = StatusCode.BAD_REQUEST;
-    return next(err);
-  }
 
   try {
+    validateFields(
+      [
+        { field: email, message: "Email is required" },
+        { field: password, message: "Password is required" },
+      ],
+      next
+    );
+
     // Find user by email
     const user = await userModel.findOne({ email }).select("+password");
-    if (!user) {
-      const err = new Error("Invalid email or password");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
-    }
 
-    if (user.isDeleted) {
-      const err = new Error("Account not found");
-      err.statusCode = StatusCode.NOT_FOUND;
-      return next(err);
+    if (!user || user.isDeleted) {
+      return sendError(STATUSCODE.NOT_FOUND, "Account not found", next);
     }
 
     const isMatch = await user.comparePassword(password);
 
     // Check if password matches
     if (!isMatch) {
-      const err = new Error("Invalid email or password");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Invalid email or password",
+        next
+      );
     }
 
     user.password = undefined;
     const token = user.createJWT();
 
-    res.status(StatusCode.OK).json({
+    res.status(STATUSCODE.OK).json({
       success: true,
       message: "Login Successfully",
       user,
       token,
     });
   } catch (error) {
-    next(error); // Pass error to the error middleware
+    next(error);
   }
 };
 
@@ -100,9 +103,7 @@ export const getUserById = async (req, res, next) => {
 
     // Check if the provided user ID is valid
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      const err = new Error("Invalid user ID");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(STATUSCODE.BAD_REQUEST, "Invalid user ID", next);
     }
 
     // Find the user by ID in the database
@@ -110,16 +111,14 @@ export const getUserById = async (req, res, next) => {
 
     // Check if the user exists
     if (!user || user.isDeleted) {
-      const err = new Error("Account not found");
-      err.statusCode = StatusCode.NOT_FOUND;
-      return next(err);
+      return sendError(STATUSCODE.NOT_FOUND, "Account not found", next);
     }
 
     // Omit password from user object
     const { password, ...userData } = user.toObject();
 
     // Return the user details
-    res.status(StatusCode.OK).json({ message: "found", user: userData });
+    res.status(STATUSCODE.OK).json({ message: "found", user: userData });
   } catch (error) {
     next(error);
   }
@@ -132,9 +131,7 @@ export const updateUser = async (req, res, next) => {
 
     // Check if the provided user ID is valid
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      const err = new Error("Invalid user ID");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(STATUSCODE.BAD_REQUEST, "Invalid user ID", next);
     }
 
     // Find the user by ID in the database
@@ -142,9 +139,7 @@ export const updateUser = async (req, res, next) => {
 
     // Check if the user exists
     if (!user || user.isDeleted) {
-      const err = new Error("Account not found");
-      err.statusCode = StatusCode.NOT_FOUND;
-      return next(err);
+      return sendError(STATUSCODE.NOT_FOUND, "Account not found", next);
     }
 
     // Update user fields based on request body
@@ -153,11 +148,11 @@ export const updateUser = async (req, res, next) => {
     if (user.email != email) {
       const existingUser = await userModel.findOne({ email });
       if (existingUser) {
-        const err = new Error(
-          "Email already registered. Please use another one"
+        return sendError(
+          STATUSCODE.BAD_REQUEST,
+          "Email already registered. Please login",
+          next
         );
-        err.statusCode = StatusCode.BAD_REQUEST;
-        return next(err);
       }
     }
     // Update only the fields that are provided
@@ -171,13 +166,10 @@ export const updateUser = async (req, res, next) => {
 
     // Return success response with updated user details
     res
-      .status(StatusCode.OK)
+      .status(STATUSCODE.OK)
       .json({ message: "User updated successfully", user: userData });
   } catch (error) {
-    // Return error response
-    res
-      .status(StatusCode.INTERNAL_SERVER_ERROR)
-      .json({ message: "Internal server error", error });
+    next(error);
   }
 };
 
@@ -187,18 +179,18 @@ export const changePassword = async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
   try {
-    // Validate input
-    if (!userId || !currentPassword || !newPassword) {
-      const err = new Error("Please provide all fields");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
-    }
+    validateFields(
+      [
+        { field: userId, message: "User ID is required" },
+        { field: currentPassword, message: "Current Password is required" },
+        { field: newPassword, message: "New Password is required" },
+      ],
+      next
+    );
 
     // Check if the provided user ID is valid
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      const err = new Error("Invalid user ID");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(STATUSCODE.BAD_REQUEST, "Invalid user ID", next);
     }
 
     // Find the user by ID in the database
@@ -206,26 +198,26 @@ export const changePassword = async (req, res, next) => {
 
     // Check if the user exists
     if (!user || user.isDeleted) {
-      const err = new Error("Account not found");
-      err.statusCode = StatusCode.NOT_FOUND;
-      return next(err);
+      return sendError(STATUSCODE.NOT_FOUND, "Account not found", next);
     }
 
     // Verify the current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      const err = new Error("Current password is incorrect");
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Current password is incorrect",
+        next
+      );
     }
 
     // Validate the new password
     if (newPassword.length < 6) {
-      const err = new Error(
-        "Password is required and should be at least 6 characters long"
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Password is required and should be at least 6 characters long",
+        next
       );
-      err.statusCode = StatusCode.BAD_REQUEST;
-      return next(err);
     }
 
     user.password = newPassword;
@@ -235,7 +227,7 @@ export const changePassword = async (req, res, next) => {
 
     // Return success response
     res
-      .status(StatusCode.OK)
+      .status(STATUSCODE.OK)
       .json({ message: "Password changed successfully" });
   } catch (error) {
     next(error);
