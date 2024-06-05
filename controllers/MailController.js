@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const createMailOptions = ({
+export const createMailOptions = ({
   fromName,
   fromAddress,
   to,
@@ -36,7 +36,7 @@ const createMailOptions = ({
   html: html || "",
 });
 
-const sendMail = async (transporter, mailOptions) => {
+export const sendMail = async (mailOptions) => {
   try {
     await transporter.sendMail(mailOptions);
     return true;

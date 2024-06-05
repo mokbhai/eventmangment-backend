@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage }).single("upload");
 
-export const uploadFile = (req, res) => {
+export const uploadFile = (req, res, next) => {
   const { userId } = req.user;
 
   upload(req, res, function (err) {
@@ -56,7 +56,42 @@ export const uploadFile = (req, res) => {
   });
 };
 
-export const downloadFile = (req, res) => {
+export const changeFile = (req, res, next) => {
+  const { userId } = req.user;
+  const { fileId } = req.body;
+
+  upload(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+    } else if (err) {
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+    }
+
+    // Update the file data in MongoDB
+    const { filename, mimetype, path } = req.file;
+
+    const fileData = File.findById(fileId);
+    fileData.name = filename;
+    fileData.type = mimetype;
+    fileData.file = path;
+    fileData.userId = userId;
+
+    fileData
+      .save()
+      .then((result) => {
+        res.status(200).json({
+          message: "File uploaded successfully",
+          file: result,
+          fileId: result._id,
+        });
+      })
+      .catch((err) => {
+        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+      });
+  });
+};
+
+export const downloadFile = (req, res, next) => {
   const fileId = req.params.id;
 
   File.findById(fileId)
@@ -71,7 +106,8 @@ export const downloadFile = (req, res) => {
       return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     });
 };
-export const viewFile = (req, res) => {
+
+export const viewFile = (req, res, next) => {
   const fileId = req.params.id;
 
   File.findById(fileId)
