@@ -6,9 +6,9 @@ export const validateFields = (fields, next) => {
   });
 };
 
-export const sendError = (code, message, next) => {
+export const sendError = (statusCode, message, next) => {
   // console.log(message);
   const err = new Error(message);
-  err.statusCode = code;
+  err.statusCode = statusCode;
   return next(err);
 };

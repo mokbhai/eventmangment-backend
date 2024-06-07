@@ -47,8 +47,6 @@ export const createOtp = async (req, res, next) => {
 
     const otp = Math.floor(1000 + Math.random() * 9000);
 
-    console.log(otp);
-
     const result = await otpModel.create({
       otp,
       mailId,
@@ -60,7 +58,7 @@ export const createOtp = async (req, res, next) => {
     const mailOptions = createMailOptions({
       to: mailId,
       subject: "OTP for " + otpType,
-      html: generateOtpEmailHtml(otp),
+      html: generateOtpEmailHtml(otp, otpType),
     });
 
     await sendMail(mailOptions);
