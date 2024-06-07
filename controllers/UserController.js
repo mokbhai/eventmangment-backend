@@ -1,4 +1,4 @@
-import userModel from "../models/userModel.js";
+import userModel from "../models/UserModel.js";
 import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
