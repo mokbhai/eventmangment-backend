@@ -16,6 +16,7 @@ import "./controllers/MailController.js";
 import helmet from "helmet";
 import xss from "xss-clean";
 import mongoSanitize from "express-mongo-sanitize";
+import STATUSCODE from "./Enums/HttpStatusCodes.js";
 
 //#endregion
 
@@ -32,7 +33,12 @@ app.use(cors());
 app.use(morgan("dev"));
 
 /// Api routes
+app.get("/", (req, res, next) => {
+  return res.status(STATUSCODE.OK).send("<b>Event Manangment Backend</b>");
+});
+
 app.use("/api", APIRoutes);
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /// 404 Api not found
