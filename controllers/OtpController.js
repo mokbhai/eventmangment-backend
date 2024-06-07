@@ -1,5 +1,5 @@
 import OTPTYPE from "../Enums/OtpTypes.js";
-import userModel from "../models/userModel.js";
+import userModel from "../models/UserModel.js";
 import otpModel from "../models/OtpModel.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
