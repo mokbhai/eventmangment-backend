@@ -3,6 +3,7 @@ import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import EventModel from "../models/EventModel.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
+import { updateFileTill } from "./FilesController.js";
 
 export const createEvent = async (req, res, next) => {
   try {
@@ -86,6 +87,7 @@ export const createEvent = async (req, res, next) => {
       ruleBook,
       contact,
       registrationCharges,
+      photos,
       uploadedBy,
     });
 
@@ -98,12 +100,12 @@ export const createEvent = async (req, res, next) => {
       );
     }
 
-    updateFileTill(photos);
-    updateFileTill(ruleBook);
+    updateFileTill([photos]);
+    updateFileTill([ruleBook]);
 
     // Save event to database
     const savedEvent = await newEvent.save();
-    setEventRedis({ eventId, data: savedEvent });
+    setEventRedis({ eventId: savedEvent._id, data: savedEvent });
     res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);

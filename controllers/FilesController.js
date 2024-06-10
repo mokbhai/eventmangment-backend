@@ -157,12 +157,12 @@ export const viewFile = (req, res, next) => {
   });
 };
 
-export const updateFileTill = (ids) => {
+export const updateFileTill = async (ids) => {
   const till = "Permanent";
-  ids.forEach((id) => {
+  ids.forEach(async (id) => {
     try {
-      const result = File.findByIdAndUpdate(id, { till }, { new: true });
-      redisClient.set("file:" + id, JSON.stringify(result));
+      const result = await File.findByIdAndUpdate(id, { till }, { new: true });
+      redisClient.set("file:" + JSON.stringify(id), JSON.stringify(result));
     } catch (error) {
       console.log(error);
     }
