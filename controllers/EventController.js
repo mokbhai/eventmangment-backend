@@ -103,7 +103,7 @@ export const createEvent = async (req, res, next) => {
 
     // Save event to database
     const savedEvent = await newEvent.save();
-    redisClient.setex(eventId, 3600, JSON.stringify(savedEvent));
+    setEventRedis({ eventId, data: savedEvent });
     res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);
@@ -173,7 +173,7 @@ export const getEventById = async (req, res, next) => {
   }
 
   // Try getting event data from Redis
-  redisClient.get(eventId, async (err, redisEvent) => {
+  redisClient.get("event:" + eventId, async (err, redisEvent) => {
     if (err) {
       return next(err);
     }
@@ -190,8 +190,8 @@ export const getEventById = async (req, res, next) => {
           return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
         }
 
-        // Store the result in the cache for 1 hour
-        redisClient.setex(eventId, 3600, JSON.stringify(dbEvent));
+        // Store the result in the cache
+        setEventRedis({ eventId, data: dbEvent });
 
         return res.status(STATUSCODE.OK).json(dbEvent);
       } catch (error) {
@@ -220,7 +220,7 @@ export const updateEventName = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -247,7 +247,7 @@ export const updateEventType = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -274,7 +274,7 @@ export const updateEventDescription = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -301,7 +301,7 @@ export const updateOrganiserName = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -331,7 +331,7 @@ export const updateEventLocation = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -360,7 +360,7 @@ export const updateEventDate = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -387,7 +387,7 @@ export const updateEventEligibilities = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -414,7 +414,7 @@ export const updateEventRules = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -441,7 +441,7 @@ export const updateEventPhotos = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -468,7 +468,7 @@ export const updateEventRuleBook = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -495,7 +495,7 @@ export const updateEventContact = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -522,7 +522,7 @@ export const updateEventRegistrationCharges = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -549,7 +549,7 @@ export const updateEventUploadedBy = async (req, res, next) => {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -575,10 +575,22 @@ export const deleteEvent = async (req, res, next) => {
 
     await event.save();
 
-    redisClient.del(eventId);
+    delEventRedis(eventId);
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
     next(error);
   }
+};
+
+const setEventRedis = ({ eventId, ex, data }) => {
+  if (ex) {
+    redisClient.setex("event:" + eventId, ex, JSON.stringify(data));
+  } else {
+    redisClient.set("event:" + eventId, JSON.stringify(data));
+  }
+};
+
+const delEventRedis = ({ id }) => {
+  redisClient.del("event:" + id);
 };

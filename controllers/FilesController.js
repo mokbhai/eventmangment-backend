@@ -47,7 +47,7 @@ export const uploadFile = (req, res, next) => {
       .then((result) => {
         // Store data in cache for future use
         redisClient.set(
-          "fileId:" + result._id.toString(),
+          "file:" + result._id.toString(),
           JSON.stringify(result)
         ); // Set expiry to 10 minutes
         res.status(200).json({
@@ -86,7 +86,7 @@ export const changeFile = (req, res, next) => {
       .save()
       .then((result) => {
         // Update data in cache
-        redisClient.set("fileId:" + fileId, JSON.stringify(result)); // Set expiry to 10 minutes
+        redisClient.set("file:" + fileId, JSON.stringify(result)); // Set expiry to 10 minutes
         res.status(200).json({
           message: "File uploaded successfully",
           file: result,
@@ -103,7 +103,7 @@ export const downloadFile = (req, res, next) => {
   const fileId = req.params.id;
 
   // Check if data is in cache
-  redisClient.get("fileId:" + fileId, (err, result) => {
+  redisClient.get("file:" + fileId, (err, result) => {
     if (result) {
       // If data is in cache, send it
       const file = JSON.parse(result);
@@ -117,7 +117,7 @@ export const downloadFile = (req, res, next) => {
       File.findById(fileId)
         .then((file) => {
           // Store data in cache for future use
-          redisClient.set("fileId:" + fileId, JSON.stringify(file));
+          redisClient.set("file:" + fileId, JSON.stringify(file));
           res.set({
             "Content-Type": file.type,
             "Content-Disposition": "attachment; filename=" + file.name,
@@ -135,7 +135,7 @@ export const viewFile = (req, res, next) => {
   const fileId = req.params.id;
 
   // Check if data is in cache
-  redisClient.get("fileId:" + fileId, (err, result) => {
+  redisClient.get("file:" + fileId, (err, result) => {
     if (result) {
       // If data is in cache, send it
       const file = JSON.parse(result);
@@ -146,7 +146,7 @@ export const viewFile = (req, res, next) => {
       File.findById(fileId)
         .then((file) => {
           // Store data in cache for future use
-          redisClient.set("fileId:" + fileId, JSON.stringify(file)); // Set expiry to 10 minutes
+          redisClient.set("file:" + fileId, JSON.stringify(file)); // Set expiry to 10 minutes
           // Redirect to the file path
           res.redirect(`/${file.file}`);
         })
@@ -162,7 +162,7 @@ export const updateFileTill = (ids) => {
   ids.forEach((id) => {
     try {
       const result = File.findByIdAndUpdate(id, { till }, { new: true });
-      redisClient.set("fileId:" + id, JSON.stringify(result));
+      redisClient.set("file:" + id, JSON.stringify(result));
     } catch (error) {
       console.log(error);
     }

@@ -43,12 +43,12 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 /// 404 Api not found
 app.use("/uploads/*", (req, res, next) => {
   const err = new Error("File Not Found");
-  err.status = 404;
+  err.statusCode = 404;
   next(err);
 });
 app.use("/*", (req, res, next) => {
   const err = new Error("Api Not Found");
-  err.status = 404;
+  err.statusCode = 404;
   next(err);
 });
 
