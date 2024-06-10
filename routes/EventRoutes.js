@@ -3,6 +3,7 @@ import {
   createEvent,
   deleteEvent,
   filterEvents,
+  getEventById,
   updateEventContact,
   updateEventDate,
   updateEventDescription,
@@ -23,6 +24,7 @@ const router = express.Router();
 // Route for createEvent
 router.post("/create", userAuth, createEvent);
 router.get("/filter", filterEvents);
+router.get("/:eventId", getEventById);
 router.patch("/:eventId/name", updateEventName);
 router.patch("/:eventId/type", updateEventType);
 router.patch("/:eventId/description", updateEventDescription);

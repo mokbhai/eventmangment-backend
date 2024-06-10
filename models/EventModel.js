@@ -7,6 +7,12 @@ const eventSchema = new Schema(
     eventName: { type: String, required: [true, "Event name is required"] },
     eventType: { type: String, required: [true, "Event name is required"] },
     description: { type: String, required: [true, "Description is required"] },
+    photos: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        required: [true, "Photos is required"],
+      },
+    ],
     organiserName: {
       type: String,
       required: [true, "Organiser name is required"],

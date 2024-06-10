@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import fs from "fs";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError } from "./ErrorHandler.js";
+import redisClient from "../config/redis.js";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -44,6 +45,11 @@ export const uploadFile = (req, res, next) => {
     fileData
       .save()
       .then((result) => {
+        // Store data in cache for future use
+        redisClient.set(
+          "fileId:" + result._id.toString(),
+          JSON.stringify(result)
+        ); // Set expiry to 10 minutes
         res.status(200).json({
           message: "File uploaded successfully",
           file: result,
@@ -79,6 +85,8 @@ export const changeFile = (req, res, next) => {
     fileData
       .save()
       .then((result) => {
+        // Update data in cache
+        redisClient.set("fileId:" + fileId, JSON.stringify(result)); // Set expiry to 10 minutes
         res.status(200).json({
           message: "File uploaded successfully",
           file: result,
@@ -94,28 +102,69 @@ export const changeFile = (req, res, next) => {
 export const downloadFile = (req, res, next) => {
   const fileId = req.params.id;
 
-  File.findById(fileId)
-    .then((file) => {
+  // Check if data is in cache
+  redisClient.get("fileId:" + fileId, (err, result) => {
+    if (result) {
+      // If data is in cache, send it
+      const file = JSON.parse(result);
       res.set({
         "Content-Type": file.type,
         "Content-Disposition": "attachment; filename=" + file.name,
       });
       fs.createReadStream(file.file).pipe(res);
-    })
-    .catch((err) => {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    });
+    } else {
+      // If data is not in cache, fetch it from the database
+      File.findById(fileId)
+        .then((file) => {
+          // Store data in cache for future use
+          redisClient.set("fileId:" + fileId, JSON.stringify(file));
+          res.set({
+            "Content-Type": file.type,
+            "Content-Disposition": "attachment; filename=" + file.name,
+          });
+          fs.createReadStream(file.file).pipe(res);
+        })
+        .catch((err) => {
+          return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+        });
+    }
+  });
 };
 
 export const viewFile = (req, res, next) => {
   const fileId = req.params.id;
 
-  File.findById(fileId)
-    .then((file) => {
+  // Check if data is in cache
+  redisClient.get("fileId:" + fileId, (err, result) => {
+    if (result) {
+      // If data is in cache, send it
+      const file = JSON.parse(result);
       // Redirect to the file path
       res.redirect(`/${file.file}`);
-    })
-    .catch((err) => {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    });
+    } else {
+      // If data is not in cache, fetch it from the database
+      File.findById(fileId)
+        .then((file) => {
+          // Store data in cache for future use
+          redisClient.set("fileId:" + fileId, JSON.stringify(file)); // Set expiry to 10 minutes
+          // Redirect to the file path
+          res.redirect(`/${file.file}`);
+        })
+        .catch((err) => {
+          return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+        });
+    }
+  });
+};
+
+export const updateFileTill = (ids) => {
+  const till = "Permanent";
+  ids.forEach((id) => {
+    try {
+      const result = File.findByIdAndUpdate(id, { till }, { new: true });
+      redisClient.set("fileId:" + id, JSON.stringify(result));
+    } catch (error) {
+      console.log(error);
+    }
+  });
 };
