@@ -10,7 +10,7 @@ import userAuth from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", getAllContactUs);
-router.delete("/:id", deleteContactUs);
+router.delete("/:id", userAuth, deleteContactUs);
 router.put("/:id", userAuth, updateContactUs);
 router.post("/create", userAuth, createContactUs);
 
