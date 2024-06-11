@@ -5,7 +5,7 @@ import FileRoutes from "./FileRoutes.js";
 import MailRoutes from "./MailRoutes.js";
 import OtpRoutes from "./OtpRoutes.js";
 import RegistrationRoutes from "./RegistrationRoutes.js";
-import ContactUsRoutes from "./ContactRoutes.js";
+import ContactUsRoutes from "./ContactUsRoutes.js";
 
 const router = express.Router();
 
