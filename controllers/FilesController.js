@@ -23,10 +23,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage }).single("upload");
 
-export const uploadFile = (req, res, next) => {
+export const uploadFile = async (req, res, next) => {
   const { userId } = req.user;
 
-  upload(req, res, function (err) {
+  await upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     } else if (err) {
@@ -42,7 +42,7 @@ export const uploadFile = (req, res, next) => {
       userId,
     });
 
-    fileData
+    await fileData
       .save()
       .then((result) => {
         // Store data in cache for future use
@@ -62,11 +62,11 @@ export const uploadFile = (req, res, next) => {
   });
 };
 
-export const changeFile = (req, res, next) => {
+export const changeFile = async (req, res, next) => {
   const { userId } = req.user;
   const { fileId } = req.body;
 
-  upload(req, res, function (err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     } else if (err) {
@@ -76,13 +76,13 @@ export const changeFile = (req, res, next) => {
     // Update the file data in MongoDB
     const { filename, mimetype, path } = req.file;
 
-    const fileData = File.findById(fileId);
+    const fileData = await File.findById(fileId);
     fileData.name = filename;
     fileData.type = mimetype;
     fileData.file = path;
     fileData.userId = userId;
 
-    fileData
+    await fileData
       .save()
       .then((result) => {
         // Update data in cache
@@ -99,11 +99,11 @@ export const changeFile = (req, res, next) => {
   });
 };
 
-export const downloadFile = (req, res, next) => {
+export const downloadFile = async (req, res, next) => {
   const fileId = req.params.id;
 
   // Check if data is in cache
-  redisClient.get("file:" + fileId, (err, result) => {
+  await redisClient.get("file:" + fileId, async (err, result) => {
     if (result) {
       // If data is in cache, send it
       const file = JSON.parse(result);
@@ -114,10 +114,10 @@ export const downloadFile = (req, res, next) => {
       fs.createReadStream(file.file).pipe(res);
     } else {
       // If data is not in cache, fetch it from the database
-      File.findById(fileId)
-        .then((file) => {
+      await File.findById(fileId)
+        .then(async (file) => {
           // Store data in cache for future use
-          redisClient.set("file:" + fileId, JSON.stringify(file));
+          await redisClient.set("file:" + fileId, JSON.stringify(file));
           res.set({
             "Content-Type": file.type,
             "Content-Disposition": "attachment; filename=" + file.name,
@@ -131,11 +131,11 @@ export const downloadFile = (req, res, next) => {
   });
 };
 
-export const viewFile = (req, res, next) => {
+export const viewFile = async (req, res, next) => {
   const fileId = req.params.id;
 
   // Check if data is in cache
-  redisClient.get("file:" + fileId, (err, result) => {
+  await redisClient.get("file:" + fileId, async (err, result) => {
     if (result) {
       // If data is in cache, send it
       const file = JSON.parse(result);
@@ -143,7 +143,7 @@ export const viewFile = (req, res, next) => {
       res.redirect(`/${file.file}`);
     } else {
       // If data is not in cache, fetch it from the database
-      File.findById(fileId)
+      await File.findById(fileId)
         .then((file) => {
           // Store data in cache for future use
           redisClient.set("file:" + fileId, JSON.stringify(file)); // Set expiry to 10 minutes

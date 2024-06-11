@@ -5,6 +5,7 @@ import FileRoutes from "./FileRoutes.js";
 import MailRoutes from "./MailRoutes.js";
 import OtpRoutes from "./OtpRoutes.js";
 import RegistrationRoutes from "./RegistrationRoutes.js";
+import ContactUsRoutes from "./ContactRoutes.js";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/file", FileRoutes);
 router.use("/mail", MailRoutes);
 router.use("/otp", OtpRoutes);
 router.use("/registration", RegistrationRoutes);
+router.use("/contactUs", ContactUsRoutes);
 
 export default router;

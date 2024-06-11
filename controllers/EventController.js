@@ -105,7 +105,10 @@ export const createEvent = async (req, res, next) => {
 
     // Save event to database
     const savedEvent = await newEvent.save();
-    setEventRedis({ eventId: savedEvent._id, data: savedEvent });
+    setEventRedis({
+      eventId: JSON.stringify(savedEvent._id),
+      data: savedEvent,
+    });
     res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);
