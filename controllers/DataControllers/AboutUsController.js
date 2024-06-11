@@ -1,7 +1,7 @@
 // AboutUsModel.js
 import mongoose from "mongoose";
-import STATUSCODE from "../Enums/HttpStatusCodes.js";
-import { sendError, validateFields } from "./ErrorHandler.js";
+import STATUSCODE from "../../Enums/HttpStatusCodes.js";
+import { sendError, validateFields } from "../ErrorHandler.js";
 
 const AboutUsSchema = mongoose.Schema(
   {

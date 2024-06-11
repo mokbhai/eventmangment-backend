@@ -1,7 +1,7 @@
-import redisClient from "../config/redis.js";
-import STATUSCODE from "../Enums/HttpStatusCodes.js";
-import ContactUs from "../models/ContactUsModel.js";
-import { validateFields, sendError } from "./ErrorHandler.js";
+import redisClient from "../../config/redis.js";
+import STATUSCODE from "../../Enums/HttpStatusCodes.js";
+import ContactUs from "../../models/DataModels/ContactUsModel.js";
+import { validateFields, sendError } from "../ErrorHandler.js";
 
 export const createContactUs = async (req, res, next) => {
   try {

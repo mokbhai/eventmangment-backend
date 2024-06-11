@@ -5,8 +5,8 @@ import {
   findAllAboutUs,
   findOneAboutUs,
   deleteAboutUs,
-} from "../controllers/AboutUsController.js";
-import userAuth from "../middlewares/authMiddleware.js";
+} from "../../controllers/DataControllers/AboutUsController.js";
+import userAuth from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 

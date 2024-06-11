@@ -15,6 +15,13 @@ const FileSchema = new Schema(
         message: "{VALUE} is not supported as a valid relation",
       },
     },
+    used: {
+      type: String,
+      enum: {
+        values: ["Gallery", "RuleBook", "EventPhotos", "MediaPhotos"],
+        message: "{VALUE} is not supported as a valid relation",
+      },
+    },
   },
   {
     timestamps: true,

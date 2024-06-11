@@ -4,8 +4,8 @@ import {
   updateContactUs,
   deleteContactUs,
   getAllContactUs,
-} from "../controllers/ContactUsController.js";
-import userAuth from "../middlewares/authMiddleware.js";
+} from "../../controllers/DataControllers/ContactUsController.js";
+import userAuth from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
