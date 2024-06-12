@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import EventModel from "../models/EventModel.js";
-import { sendError, validateFields } from "./ErrorHandler.js";
+import { isValidMongoId, sendError, validateFields } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
 import { updateFileTill } from "./FilesController.js";
 
@@ -70,7 +70,7 @@ export const createEvent = async (req, res, next) => {
     );
 
     // Check if ruleBook ID is valid
-    if (!mongoose.Types.ObjectId.isValid(ruleBook)) {
+    if (!isValidMongoId(ruleBook)) {
       return sendError(STATUSCODE.BAD_REQUEST, "Rulebook is not valid", next);
     }
 

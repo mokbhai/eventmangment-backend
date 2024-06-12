@@ -18,6 +18,26 @@ const ContactUsSchema = new Schema(
   }
 );
 
-const ContactUs = mongoose.model("ContactUs", ContactUsSchema);
+const ContactUsModel = mongoose.model("ContactUs", ContactUsSchema);
 
-export default ContactUs;
+const MessageSchema = new Schema(
+  {
+    fullname: { type: String, required: [true, "Name is required"] },
+    phone: { type: String, required: [true, "Phone number is required"] },
+    email: { type: String, required: [true, "Email is required"] },
+    type: { type: String, required: [true, "Message Type is required"] },
+    message: {
+      type: String,
+      required: [true, "message is required"],
+    },
+    isReaded: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+export const MessageModel = mongoose.model("Messages", MessageSchema);
+
+export default ContactUsModel;

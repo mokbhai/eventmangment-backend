@@ -1,9 +1,13 @@
 import redisClient from "../../config/redis.js";
 import STATUSCODE from "../../Enums/HttpStatusCodes.js";
-import ContactUs from "../../models/DataModels/ContactUsModel.js";
-import { validateFields, sendError } from "../ErrorHandler.js";
+import ContactUs, {
+  MessageModel,
+} from "../../models/DataModels/ContactUsModel.js";
+import { validateFields, sendError, isValidMongoId } from "../ErrorHandler.js";
 
-export const createContactUs = async (req, res, next) => {
+//#region Contact Us Controller
+
+const createContactUs = async (req, res, next) => {
   try {
     const { fullname, phone, email, designation } = req.body;
     validateFields(
@@ -28,7 +32,7 @@ export const createContactUs = async (req, res, next) => {
   }
 };
 
-export const getAllContactUs = async (req, res, next) => {
+const getAllContactUs = async (req, res, next) => {
   redisClient.get("ContactUs", async (err, redisContactUs) => {
     if (err) {
       return next(err);
@@ -54,7 +58,7 @@ export const getAllContactUs = async (req, res, next) => {
   });
 };
 
-export const updateContactUs = async (req, res, next) => {
+const updateContactUs = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { fullname, phone, email, designation } = req.body;
@@ -82,7 +86,7 @@ export const updateContactUs = async (req, res, next) => {
   }
 };
 
-export const deleteContactUs = async (req, res, next) => {
+const deleteContactUs = async (req, res, next) => {
   try {
     const { id } = req.params;
     const deletedContactUs = await ContactUs.findByIdAndUpdate(
@@ -99,3 +103,137 @@ export const deleteContactUs = async (req, res, next) => {
     next(error);
   }
 };
+
+export const contactUsController = {
+  contactUsController,
+  getAllContactUs,
+  updateContactUs,
+  deleteContactUs,
+};
+
+//#endregion
+
+//#region Message Controller
+
+const createMesage = async (req, res, next) => {
+  try {
+    const { fullname, phone, email, message, type } = req.body;
+    validateFields(
+      [
+        { field: fullname, message: "Full name is required" },
+        { field: phone, message: "Phone number is required" },
+        { field: email, message: "Email Id is required" },
+        { field: message, message: "Message is required" },
+        { field: type, message: "Message type is required" },
+      ],
+      next
+    );
+    const data = new MessageModel({
+      fullname,
+      phone,
+      email,
+      message,
+      type,
+    });
+
+    const result = await data.save();
+
+    if (!result) {
+      return sendError(STATUSCODE.BAD_REQUEST, "Message not saved", next);
+    }
+
+    return res.status(STATUSCODE.CREATED).json("Message Saved");
+  } catch (error) {
+    next(error);
+  }
+};
+
+const filterMessages = async (req, res, next) => {
+  try {
+    const { isReaded, isDeleted, type, date } = req.query;
+
+    let filter = {};
+
+    if (isReaded !== undefined) {
+      filter.isReaded = isReaded === "true";
+    }
+
+    if (isDeleted !== undefined) {
+      filter.isDeleted = isDeleted === "true";
+    }
+
+    if (type) {
+      filter.type = type;
+    }
+
+    // Add date filter
+    if (date) {
+      filter.date = new Date(date);
+    }
+
+    const messages = await MessageModel.find(filter);
+
+    if (messages == []) {
+      return res
+        .status(STATUSCODE.NO_CONTENT)
+        .json({ messages: "No Messages Found for filter", filter });
+    }
+
+    return res.status(STATUSCODE.OK).json(messages);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateMessage = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let { isReaded, isDeleted } = req.body;
+
+    if (!isValidMongoId(id)) {
+      return sendError(STATUSCODE.BAD_REQUEST, "Message Id is not valid", next);
+    }
+
+    const data = await MessageModel.findById(id);
+
+    if (!data) {
+      return sendError(STATUSCODE.NOT_FOUND, "Message not found", next);
+    }
+
+    if (isReaded == undefined) {
+      isReaded = data.isReaded;
+    }
+
+    if (isDeleted == undefined) {
+      isReaded = data.isDeleted;
+    }
+
+    const result = await data.save();
+
+    return res.status(STATUSCODE.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteMessagePermanently = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const deletedMessage = await MessageModel.findByIdAndDelete(id);
+    if (!deletedMessage) {
+      return sendError(STATUSCODE.NOT_FOUND, "Message not found", next);
+    }
+    return res.status(STATUSCODE.OK).json(deleteMessage);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const messageController = {
+  createMesage,
+  filterMessages,
+  updateMessage,
+  deleteMessagePermanently,
+};
+
+//#endregion

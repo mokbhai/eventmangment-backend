@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export const validateFields = (fields, next) => {
   fields.forEach((field) => {
     if (!field.field) {
@@ -11,4 +13,9 @@ export const sendError = (statusCode, message, next) => {
   const err = new Error(message);
   err.statusCode = statusCode;
   return next(err);
+};
+
+// check MongoId
+export const isValidMongoId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
 };
