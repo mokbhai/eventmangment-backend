@@ -1,7 +1,7 @@
 import multer from "multer";
 import path from "path";
 import File from "../models/FilesModel.js";
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 import fs from "fs";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError } from "./ErrorHandler.js";
