@@ -105,7 +105,7 @@ const deleteContactUs = async (req, res, next) => {
 };
 
 export const contactUsController = {
-  contactUsController,
+  createContactUs,
   getAllContactUs,
   updateContactUs,
   deleteContactUs,
