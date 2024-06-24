@@ -196,7 +196,7 @@ export const getEventById = async (req, res, next) => {
         }
 
         // Store the result in the cache
-        setEventRedis({ eventId, data: dbEvent });
+        setEventRedis({ eventId, ex: 24 * 3600, data: dbEvent });
 
         return res.status(STATUSCODE.OK).json(dbEvent);
       } catch (error) {
