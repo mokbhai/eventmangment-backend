@@ -26,7 +26,7 @@ const upload = multer({ storage }).single("upload");
 export const uploadFile = async (req, res, next) => {
   const { userId } = req.user;
 
-  await upload(req, res, async function (err) {
+  upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     } else if (err) {
