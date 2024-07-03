@@ -139,20 +139,25 @@ export const viewFile = async (req, res, next) => {
     if (result) {
       // If data is in cache, send it
       const file = JSON.parse(result);
+      console.log(file);
       // Redirect to the file path
       res.redirect(`/${file.file}`);
     } else {
       // If data is not in cache, fetch it from the database
-      await File.findById(fileId)
+      const file = await File.findById(fileId)
         .then((file) => {
           // Store data in cache for future use
-          redisClient.set("file:" + fileId, JSON.stringify(file)); // Set expiry to 10 minutes
+          console.log(file);
+
+          redisClient.set("file:" + fileId, JSON.stringify(file));
+
           // Redirect to the file path
           res.redirect(`/${file.file}`);
         })
         .catch((err) => {
           return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
         });
+      console.log(file);
     }
   });
 };

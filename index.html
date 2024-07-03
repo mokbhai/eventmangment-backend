@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      .video-container {
+        display: flex;
+      }
+
+      #myVideo1,
+      #myVideo2 {
+        width: 50%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="video-container">
+      <video id="myVideo1" width="320" height="240" controls>
+        <source src="movie.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <video id="myVideo2" width="320" height="240" controls>
+        <source src="movie.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <script>
+      var vid1 = document.getElementById("myVideo1");
+      var vid2 = document.getElementById("myVideo2");
+
+      vid1.onplay = function () {
+        vid2.play();
+      };
+
+      vid1.onpause = function () {
+        vid2.pause();
+      };
+
+      vid2.onplay = function () {
+        vid1.play();
+      };
+
+      vid2.onpause = function () {
+        vid1.pause();
+      };
+    </script>
+  </body>
+</html>
