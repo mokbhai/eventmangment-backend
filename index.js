@@ -23,7 +23,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "validator.swagger.io"],
+      childSrc: ["'self'"],
+      frameAncestors: ["'self'", "http://localhost:3000"],
+    },
+  })
+);
 app.use(xss());
 app.use(mongoSanitize());
 app.use(express.json());
