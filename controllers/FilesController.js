@@ -133,33 +133,36 @@ export const downloadFile = async (req, res, next) => {
 
 export const viewFile = async (req, res, next) => {
   const fileId = req.params.id;
+  try {
+    // Check if data is in cache
+    await redisClient.get("file:" + fileId, async (err, result) => {
+      if (result) {
+        // If data is in cache, send it
+        const file = JSON.parse(result);
+        console.log(file);
+        // Redirect to the file path
+        res.redirect(`/${file.file}`);
+      } else {
+        // If data is not in cache, fetch it from the database
+        const file = await File.findById(fileId)
+          .then((file) => {
+            // Store data in cache for future use
+            console.log(file);
 
-  // Check if data is in cache
-  await redisClient.get("file:" + fileId, async (err, result) => {
-    if (result) {
-      // If data is in cache, send it
-      const file = JSON.parse(result);
-      console.log(file);
-      // Redirect to the file path
-      res.redirect(`/${file.file}`);
-    } else {
-      // If data is not in cache, fetch it from the database
-      const file = await File.findById(fileId)
-        .then((file) => {
-          // Store data in cache for future use
-          console.log(file);
+            redisClient.set("file:" + fileId, JSON.stringify(file));
 
-          redisClient.set("file:" + fileId, JSON.stringify(file));
-
-          // Redirect to the file path
-          res.redirect(`/${file.file}`);
-        })
-        .catch((err) => {
-          return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-        });
-      console.log(file);
-    }
-  });
+            // Redirect to the file path
+            res.redirect(`/${file.file}`);
+          })
+          .catch((err) => {
+            return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+          });
+        console.log(file);
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const updateFileTill = async (ids) => {

@@ -7,7 +7,9 @@ import {
 } from "../../controllers/DataControllers/AboutUsController.js";
 import userAuth from "../../middlewares/authMiddleware.js";
 
-const router = express.Router();
+const aboutusRouter = express.Router();
+const socialMediaRouter = express.Router();
+const galaryRouter = express.Router();
 
 //#region About Us
 
@@ -19,11 +21,11 @@ const {
   deleteAboutUs,
 } = aboutUsController;
 
-router.get("/", findAllAboutUs);
-router.get("/:id", findOneAboutUs);
-router.delete("/:id", userAuth, deleteAboutUs);
-router.put("/:id", userAuth, updateAboutUs);
-router.post("/create", userAuth, createAboutUs);
+aboutusRouter.get("/", findAllAboutUs);
+aboutusRouter.get("/:id", findOneAboutUs);
+aboutusRouter.delete("/:id", userAuth, deleteAboutUs);
+aboutusRouter.put("/:id", userAuth, updateAboutUs);
+aboutusRouter.post("/create", userAuth, createAboutUs);
 
 //#endregion
 
@@ -36,34 +38,23 @@ const {
   deleteSocialMedia,
 } = socialMediaController;
 
-router.get("/SocialMedia/", getAllSocialMedia);
-router.delete("/SocialMedia/:id", userAuth, deleteSocialMedia);
-router.put("/SocialMedia/:id", userAuth, updateSocialMedia);
-router.post("/SocialMedia/create", userAuth, createSocialMedia);
+socialMediaRouter.get("/SocialMedia/", getAllSocialMedia);
+socialMediaRouter.delete("/SocialMedia/:id", userAuth, deleteSocialMedia);
+socialMediaRouter.put("/SocialMedia/:id", userAuth, updateSocialMedia);
+socialMediaRouter.post("/SocialMedia/create", userAuth, createSocialMedia);
 
 //#endregion
 
-//#region SocialMedia
+//#region Galary
 
 const { createGalary, getAllGalary, updateGalary, deleteGalary } =
   galaryController;
 
-router.get("/Galary/", getAllGalary);
-router.delete("/Galary/:id", userAuth, deleteGalary);
-router.put("/Galary/:id", userAuth, updateGalary);
-router.post("/Galary/create", userAuth, createGalary);
+galaryRouter.get("/", getAllGalary);
+galaryRouter.delete("/:id", userAuth, deleteGalary);
+galaryRouter.put("/:id", userAuth, updateGalary);
+galaryRouter.post("/create", userAuth, createGalary);
 
 //#endregion
 
-//#region SocialMedia
-
-const { createMedia, getAllMedia, updateMedia, deleteMedia } = mediaController;
-
-router.get("/Media/", getAllMedia);
-router.delete("/Media/:id", userAuth, deleteMedia);
-router.put("/Media/:id", userAuth, updateMedia);
-router.post("/Media/create", userAuth, createMedia);
-
-//#endregion
-
-export default router;
+export { socialMediaRouter, galaryRouter, aboutusRouter };
