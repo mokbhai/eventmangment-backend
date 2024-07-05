@@ -14,20 +14,16 @@ import redisClient from "../../config/redis.js";
 //#region About Us
 
 const createAboutUs = async (req, res, next) => {
-  const { title, description } = req.body;
+  const { photos, description } = req.body;
   validateFields(
     [
-      { field: title, message: "Title is required" },
+      { field: photos, message: "Photos is required" },
       { field: description, message: "Description is required" },
     ],
     next
   );
 
-  // Create a About Us
-  const aboutUs = new AboutUs({
-    title,
-    description,
-  });
+  // Create a About Us file and save discription and photos
 
   // Save About Us in the database
   try {

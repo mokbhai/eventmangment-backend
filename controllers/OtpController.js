@@ -71,7 +71,6 @@ export const createOtp = async (req, res, next) => {
       success: true,
       message: "OTP sent to email",
       mail: mailId,
-      otp: result.otp,
       token,
     });
   } catch (error) {
