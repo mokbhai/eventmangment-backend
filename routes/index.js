@@ -8,7 +8,7 @@ import RegistrationRoutes from "./RegistrationRoutes.js";
 import ContactUsRoutes from "./DataRoutes/ContactUsRoutes.js";
 import {
   aboutusRouter,
-  galaryRouter,
+  galleryRouter,
   socialMediaRouter,
 } from "./DataRoutes/AboutUsRoutes.js";
 
@@ -22,7 +22,7 @@ router.use("/otp", OtpRoutes);
 router.use("/registration", RegistrationRoutes);
 router.use("/contactUs", ContactUsRoutes);
 router.use("/aboutUs", aboutusRouter);
-router.use("/galary", galaryRouter);
+router.use("/gallery", galleryRouter);
 router.use("/socialMedia", socialMediaRouter);
 
 export default router;

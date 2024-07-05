@@ -4,18 +4,20 @@ import ContactUs, {
   MessageModel,
 } from "../../models/DataModels/ContactUsModel.js";
 import { validateFields, sendError, isValidMongoId } from "../ErrorHandler.js";
+import { updateFileTill } from "../FilesController.js";
 
 //#region Contact Us Controller
 
 const createContactUs = async (req, res, next) => {
   try {
-    const { fullname, phone, email, designation } = req.body;
+    const { fullname, phone, email, designation, photo } = req.body;
     validateFields(
       [
         { field: fullname, message: "Full name is required" },
         { field: phone, message: "Phone number is required" },
         { field: email, message: "Email Id is required" },
         { field: designation, message: "Designation is required" },
+        { field: photo, message: "Photo Id is required" },
       ],
       next
     );
@@ -24,8 +26,11 @@ const createContactUs = async (req, res, next) => {
       phone,
       email,
       designation,
+      photo,
     });
+    updateFileTill([photo]);
     const savedContactUs = await newContactUs.save();
+    redisClient.del("ContactUs");
     return res.status(STATUSCODE.CREATED).json(savedContactUs);
   } catch (error) {
     next(error);

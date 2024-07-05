@@ -37,9 +37,9 @@ export const SocialMedia = mongoose.model("SocialMedia", SocialMediaSchema);
 
 //#endregion
 
-// //#region Galary
+// //#region Gallery
 
-// const GalarySchema = mongoose.Schema(
+// const GallerySchema = mongoose.Schema(
 //   {
 //     photo: { type: String, required: [true, "Icon is required"] },
 //     alt: { type: String, required: [true, "Alt Text is required"] },
@@ -52,7 +52,7 @@ export const SocialMedia = mongoose.model("SocialMedia", SocialMediaSchema);
 //   }
 // );
 
-// export const Galary = mongoose.model("Galary", GalarySchema);
+// export const Gallery = mongoose.model("Gallery", GallerySchema);
 
 // //#endregion
 

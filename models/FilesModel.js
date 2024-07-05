@@ -22,6 +22,7 @@ const FileSchema = new Schema(
         message: "{VALUE} is not supported as a valid relation",
       },
     },
+    isdeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,

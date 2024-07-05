@@ -1,7 +1,7 @@
 import express from "express";
 import {
   aboutUsController,
-  galaryController,
+  galleryController,
   mediaController,
   socialMediaController,
 } from "../../controllers/DataControllers/AboutUsController.js";
@@ -9,7 +9,7 @@ import userAuth from "../../middlewares/authMiddleware.js";
 
 const aboutusRouter = express.Router();
 const socialMediaRouter = express.Router();
-const galaryRouter = express.Router();
+const galleryRouter = express.Router();
 
 //#region About Us
 
@@ -45,15 +45,15 @@ socialMediaRouter.post("/SocialMedia/create", userAuth, createSocialMedia);
 
 //#endregion
 
-//#region Galary
+//#region Gallery
 
-const { createGalary, getAllGalary, deleteGalary } = galaryController;
+const { createGallery, getAllGallery, deleteGallery } = galleryController;
 
-galaryRouter.get("/", getAllGalary);
-galaryRouter.delete("/:id", userAuth, deleteGalary);
-// galaryRouter.put("/:id", userAuth, updateGalary);
-galaryRouter.post("/create", userAuth, createGalary);
+galleryRouter.get("/", getAllGallery);
+galleryRouter.delete("/:id", userAuth, deleteGallery);
+// galleryRouter.put("/:id", userAuth, updateGallery);
+galleryRouter.post("/create", userAuth, createGallery);
 
 //#endregion
 
-export { socialMediaRouter, galaryRouter, aboutusRouter };
+export { socialMediaRouter, galleryRouter, aboutusRouter };

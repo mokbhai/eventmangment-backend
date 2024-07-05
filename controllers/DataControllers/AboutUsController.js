@@ -292,11 +292,11 @@ export const socialMediaController = {
 
 //#endregion
 
-//#region Galary
+//#region Gallery
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const dir = "./uploads/Galary";
+    const dir = "./uploads/Gallery";
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -310,7 +310,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage }).single("upload");
 
-export const createGalary = async (req, res, next) => {
+export const createGallery = async (req, res, next) => {
   const { userId } = req.user;
 
   upload(req, res, async function (err) {
@@ -330,7 +330,7 @@ export const createGalary = async (req, res, next) => {
       till: "Permanent",
       userId,
     });
-
+    redisClient.del("Gallery");
     await fileData
       .save()
       .then((result) => {
@@ -352,8 +352,8 @@ export const createGalary = async (req, res, next) => {
 };
 
 // Retrieve and return all about us from the database.
-const getAllGalary = async (req, res, next) => {
-  redisClient.get("Galary", async (err, redisData) => {
+const getAllGallery = async (req, res, next) => {
+  redisClient.get("Gallery", async (err, redisData) => {
     if (err) {
       return next(err);
     }
@@ -368,11 +368,11 @@ const getAllGalary = async (req, res, next) => {
         if (data.length == 0) {
           return sendError(
             STATUSCODE.NOT_FOUND,
-            "No Galary Photos found",
+            "No Gallery Photos found",
             next
           );
         }
-        redisClient.setex("Galary", 10, JSON.stringify(data));
+        redisClient.set("Gallery", JSON.stringify(data));
         return res.status(STATUSCODE.OK).send(data);
       } catch (err) {
         next(err);
@@ -382,25 +382,25 @@ const getAllGalary = async (req, res, next) => {
 };
 
 // Update a about us identified by the aboutUsId in the request
-// const updateGalary = async (req, res, next) => {
+// const updateGallery = async (req, res, next) => {
 //   const { photo, alt, description, type } = req.body;
 //   const { id } = req.params;
 //   // Validate Request
-//   checkId(id, "Galary Photo", next);
+//   checkId(id, "Gallery Photo", next);
 
 //   validateFields(
 //     [
-//       { field: photo, message: "Galary Photo is required" },
+//       { field: photo, message: "Gallery Photo is required" },
 //       { field: alt, message: "Alt Text is required" },
-//       { field: description, message: "Galary Photo description is required" },
-//       { field: type, message: "Galary Photo type is required" },
+//       { field: description, message: "Gallery Photo description is required" },
+//       { field: type, message: "Gallery Photo type is required" },
 //     ],
 //     next
 //   );
 
 //   // Find about us and update it with the request body
 //   try {
-//     const data = await Galary.findByIdAndUpdate(
+//     const data = await Gallery.findByIdAndUpdate(
 //       id,
 //       {
 //         photo,
@@ -415,7 +415,7 @@ const getAllGalary = async (req, res, next) => {
 //       return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
 //     }
 
-//     redisClient.del("Galary");
+//     redisClient.del("Gallery");
 //     return res.status(STATUSCODE.OK).send(data);
 //   } catch (err) {
 //     next(err);
@@ -423,34 +423,35 @@ const getAllGalary = async (req, res, next) => {
 // };
 
 // Delete a about us with the specified aboutUsId in the request
-const deleteGalary = async (req, res, next) => {
+const deleteGallery = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    checkId(id, "Galary Photo", next);
+    checkId(id, "Gallery Photo", next);
 
-    const data = await File.findByIdAndUpdate(
+    const data = await FilesModel.findByIdAndUpdate(
       id,
       { isDeleted: true },
       { new: true }
     );
 
     if (!data) {
-      return sendError(STATUSCODE.NOT_FOUND, "Galary Photo not found", next);
+      return sendError(STATUSCODE.NOT_FOUND, "Gallery Photo not found", next);
     }
-    redisClient.del("Galary");
 
-    res.send({ message: "Galary Photo deleted successfully!" });
+    redisClient.del("Gallery");
+
+    res.send({ message: "Gallery Photo deleted successfully!" });
   } catch (err) {
     next(err);
   }
 };
 
-export const galaryController = {
-  createGalary,
-  getAllGalary,
-  // updateGalary,
-  deleteGalary,
+export const galleryController = {
+  createGallery,
+  getAllGallery,
+  // updateGallery,
+  deleteGallery,
 };
 
 //#endregion
