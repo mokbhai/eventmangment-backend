@@ -48,7 +48,7 @@ const getAllContactUs = async (req, res, next) => {
     } else {
       try {
         const data = await ContactUs.find({ isDeleted: false });
-
+        console.log(data);
         if (!data) {
           return sendError(STATUSCODE.NOT_FOUND, "No Contact found", next);
         }
