@@ -47,12 +47,11 @@ socialMediaRouter.post("/SocialMedia/create", userAuth, createSocialMedia);
 
 //#region Galary
 
-const { createGalary, getAllGalary, updateGalary, deleteGalary } =
-  galaryController;
+const { createGalary, getAllGalary, deleteGalary } = galaryController;
 
 galaryRouter.get("/", getAllGalary);
 galaryRouter.delete("/:id", userAuth, deleteGalary);
-galaryRouter.put("/:id", userAuth, updateGalary);
+// galaryRouter.put("/:id", userAuth, updateGalary);
 galaryRouter.post("/create", userAuth, createGalary);
 
 //#endregion

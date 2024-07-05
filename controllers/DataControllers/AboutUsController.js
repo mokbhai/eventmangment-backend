@@ -1,10 +1,15 @@
 import STATUSCODE from "../../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "../ErrorHandler.js";
 import AboutUs, {
-  Galary,
   Media,
   SocialMedia,
 } from "../../models/DataModels/AboutUsModel.js";
+import multer from "multer";
+import path from "path";
+import FilesModel from "../../models/FilesModel.js";
+import mongoose from "mongoose";
+import fs from "fs";
+import redisClient from "../../config/redis.js";
 
 //#region About Us
 
@@ -289,34 +294,61 @@ export const socialMediaController = {
 
 //#region Galary
 
-const createGalary = async (req, res, next) => {
-  const { photo, alt, description, type } = req.body;
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = "./uploads/Galary";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + file.originalname;
+    cb(null, uniqueSuffix);
+  },
+});
 
-  validateFields(
-    [
-      { field: photo, message: "Galary Photo is required" },
-      { field: alt, message: "Alt Text is required" },
-      { field: description, message: "Galary Photo description is required" },
-      { field: type, message: "Galary Photo type is required" },
-    ],
-    next
-  );
+const upload = multer({ storage }).single("upload");
 
-  // Create a About Us
-  const data = new Galary({
-    photo,
-    alt,
-    description,
-    type,
+export const createGalary = async (req, res, next) => {
+  const { userId } = req.user;
+
+  upload(req, res, async function (err) {
+    if (err instanceof multer.MulterError) {
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+    } else if (err) {
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+    }
+
+    // Update the file data in MongoDB
+    const { filename, mimetype, path } = req.file;
+    const fileData = new FilesModel({
+      name: filename,
+      type: mimetype,
+      file: path,
+      used: "Gallery",
+      till: "Permanent",
+      userId,
+    });
+
+    await fileData
+      .save()
+      .then((result) => {
+        // Store data in cache for future use
+        redisClient.set(
+          "file:" + result._id.toString(),
+          JSON.stringify(result)
+        ); // Set expiry to 10 minutes
+        res.status(200).json({
+          message: "File uploaded successfully",
+          file: result,
+          fileId: result._id,
+        });
+      })
+      .catch((err) => {
+        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+      });
   });
-
-  // Save About Us in the database
-  try {
-    const result = await data.save();
-    res.status(STATUSCODE.CREATED).send(result);
-  } catch (err) {
-    next(err);
-  }
 };
 
 // Retrieve and return all about us from the database.
@@ -330,16 +362,17 @@ const getAllGalary = async (req, res, next) => {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisData));
     } else {
       try {
-        const data = await Galary.find({ isDeleted: false });
+        const filter = { used: "Gallery" };
+        const data = await FilesModel.find(filter);
 
-        if (!data) {
+        if (data.length == 0) {
           return sendError(
             STATUSCODE.NOT_FOUND,
             "No Galary Photos found",
             next
           );
         }
-        redisClient.set("Galary", JSON.stringify(data));
+        redisClient.setex("Galary", 10, JSON.stringify(data));
         return res.status(STATUSCODE.OK).send(data);
       } catch (err) {
         next(err);
@@ -349,45 +382,45 @@ const getAllGalary = async (req, res, next) => {
 };
 
 // Update a about us identified by the aboutUsId in the request
-const updateGalary = async (req, res, next) => {
-  const { photo, alt, description, type } = req.body;
-  const { id } = req.params;
-  // Validate Request
-  checkId(id, "Galary Photo", next);
+// const updateGalary = async (req, res, next) => {
+//   const { photo, alt, description, type } = req.body;
+//   const { id } = req.params;
+//   // Validate Request
+//   checkId(id, "Galary Photo", next);
 
-  validateFields(
-    [
-      { field: photo, message: "Galary Photo is required" },
-      { field: alt, message: "Alt Text is required" },
-      { field: description, message: "Galary Photo description is required" },
-      { field: type, message: "Galary Photo type is required" },
-    ],
-    next
-  );
+//   validateFields(
+//     [
+//       { field: photo, message: "Galary Photo is required" },
+//       { field: alt, message: "Alt Text is required" },
+//       { field: description, message: "Galary Photo description is required" },
+//       { field: type, message: "Galary Photo type is required" },
+//     ],
+//     next
+//   );
 
-  // Find about us and update it with the request body
-  try {
-    const data = await Galary.findByIdAndUpdate(
-      id,
-      {
-        photo,
-        alt,
-        description,
-        type,
-      },
-      { new: true }
-    );
+//   // Find about us and update it with the request body
+//   try {
+//     const data = await Galary.findByIdAndUpdate(
+//       id,
+//       {
+//         photo,
+//         alt,
+//         description,
+//         type,
+//       },
+//       { new: true }
+//     );
 
-    if (!data) {
-      return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
-    }
+//     if (!data) {
+//       return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
+//     }
 
-    redisClient.del("Galary");
-    return res.status(STATUSCODE.OK).send(data);
-  } catch (err) {
-    next(err);
-  }
-};
+//     redisClient.del("Galary");
+//     return res.status(STATUSCODE.OK).send(data);
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 // Delete a about us with the specified aboutUsId in the request
 const deleteGalary = async (req, res, next) => {
@@ -396,7 +429,7 @@ const deleteGalary = async (req, res, next) => {
 
     checkId(id, "Galary Photo", next);
 
-    const data = await Galary.findByIdAndUpdate(
+    const data = await File.findByIdAndUpdate(
       id,
       { isDeleted: true },
       { new: true }
@@ -416,7 +449,7 @@ const deleteGalary = async (req, res, next) => {
 export const galaryController = {
   createGalary,
   getAllGalary,
-  updateGalary,
+  // updateGalary,
   deleteGalary,
 };
 

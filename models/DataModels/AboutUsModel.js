@@ -37,24 +37,24 @@ export const SocialMedia = mongoose.model("SocialMedia", SocialMediaSchema);
 
 //#endregion
 
-//#region Galary
+// //#region Galary
 
-const GalarySchema = mongoose.Schema(
-  {
-    photo: { type: String, required: [true, "Icon is required"] },
-    alt: { type: String, required: [true, "Alt Text is required"] },
-    description: { type: String, required: [true, "Description is required"] },
-    type: { type: String, required: [true, "Type is required"] },
-    isDeleted: { type: String, default: false },
-  },
-  {
-    timestamps: true,
-  }
-);
+// const GalarySchema = mongoose.Schema(
+//   {
+//     photo: { type: String, required: [true, "Icon is required"] },
+//     alt: { type: String, required: [true, "Alt Text is required"] },
+//     description: { type: String, required: [true, "Description is required"] },
+//     type: { type: String, required: [true, "Type is required"] },
+//     isDeleted: { type: String, default: false },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
 
-export const Galary = mongoose.model("Galary", GalarySchema);
+// export const Galary = mongoose.model("Galary", GalarySchema);
 
-//#endregion
+// //#endregion
 
 //#region Media
 
