@@ -13,18 +13,10 @@ const galleryRouter = express.Router();
 
 //#region About Us
 
-const {
-  createAboutUs,
-  findAllAboutUs,
-  findOneAboutUs,
-  updateAboutUs,
-  deleteAboutUs,
-} = aboutUsController;
+const { createAboutUs, getAboutUs, deleteAboutUs } = aboutUsController;
 
-aboutusRouter.get("/", findAllAboutUs);
-aboutusRouter.get("/:id", findOneAboutUs);
+aboutusRouter.get("/", getAboutUs);
 aboutusRouter.delete("/:id", userAuth, deleteAboutUs);
-aboutusRouter.put("/:id", userAuth, updateAboutUs);
 aboutusRouter.post("/create", userAuth, createAboutUs);
 
 //#endregion

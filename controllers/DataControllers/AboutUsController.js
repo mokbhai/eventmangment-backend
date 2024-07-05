@@ -10,6 +10,7 @@ import FilesModel from "../../models/FilesModel.js";
 import mongoose from "mongoose";
 import fs from "fs";
 import redisClient from "../../config/redis.js";
+import { updateFileTill } from "../FilesController.js";
 
 //#region About Us
 
@@ -23,19 +24,27 @@ const createAboutUs = async (req, res, next) => {
     next
   );
 
-  // Create a About Us file and save discription and photos
-
-  // Save About Us in the database
   try {
-    const data = await aboutUs.save();
-    res.status(STATUSCODE.CREATED).send(data);
+    // Create a About Us file and save discription and photos
+    const data = {
+      photos,
+      description,
+    };
+
+    redisClient.del("AboutUs");
+
+    await updateFileTill(photos, "AboutUs");
+
+    redisClient.set("AboutUs", JSON.stringify(data));
+    // Save About Us in the database
+    return res.status(STATUSCODE.CREATED).send(data);
   } catch (err) {
     next(err);
   }
 };
 
 // Retrieve and return all about us from the database.
-const findAllAboutUs = async (req, res, next) => {
+const getAboutUs = async (req, res, next) => {
   redisClient.get("AboutUs", async (err, redisAboutUs) => {
     if (err) {
       return next(err);
@@ -44,91 +53,17 @@ const findAllAboutUs = async (req, res, next) => {
     if (redisAboutUs) {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisAboutUs));
     } else {
-      try {
-        const aboutUs = await AboutUs.find({ isDeleted: false });
-
-        if (!aboutUs) {
-          return sendError(STATUSCODE.NOT_FOUND, "No Contact found", next);
-        }
-        redisClient.set("AboutUs", JSON.stringify(aboutUs));
-        res.send(aboutUs);
-      } catch (err) {
-        next(err);
-      }
+      return res.status(STATUSCODE.NOT_FOUND).json({
+        photos: ["NOT_FOUND"],
+        description: "NOT_FOUND",
+      });
     }
   });
-};
-
-// Find a single about us with a aboutUsId
-const findOneAboutUs = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    checkId(id, "About Us", next);
-    const aboutUs = await AboutUs.findById(id);
-    if (!aboutUs) {
-      return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
-    }
-    res.status(STATUSCODE.OK).send(aboutUs);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Update a about us identified by the aboutUsId in the request
-const updateAboutUs = async (req, res, next) => {
-  const { title, description } = req.body;
-  const { id } = req.params;
-
-  checkId(id, "About Us", next);
-  // Validate Request
-  validateFields(
-    [
-      { field: title, message: "Title is required" },
-      { field: description, message: "Description is required" },
-    ],
-    next
-  );
-
-  // Find about us and update it with the request body
-  try {
-    const aboutUs = await AboutUs.findByIdAndUpdate(
-      id,
-      {
-        title,
-        description,
-      },
-      { new: true }
-    );
-
-    if (!aboutUs) {
-      return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
-    }
-    redisClient.del("AboutUs");
-
-    res.send(aboutUs);
-  } catch (err) {
-    if (err.kind === "ObjectId") {
-      return sendError(STATUSCODE.NOT_FOUND, "About Us not found", next);
-    }
-    next(err);
-  }
 };
 
 // Delete a about us with the specified aboutUsId in the request
 const deleteAboutUs = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    checkId(id, "About Us", next);
-    const aboutUs = await AboutUs.findByIdAndUpdate(
-      id,
-      { isDeleted: true },
-      { new: true }
-    );
-    if (!aboutUs) {
-      return res.status(404).send({
-        message: "About Us not found with id " + req.params.aboutUsId,
-      });
-    }
     redisClient.del("AboutUs");
 
     res.send({ message: "About Us deleted successfully!" });
@@ -146,9 +81,7 @@ const deleteAboutUs = async (req, res, next) => {
 
 export const aboutUsController = {
   createAboutUs,
-  findAllAboutUs,
-  findOneAboutUs,
-  updateAboutUs,
+  getAboutUs,
   deleteAboutUs,
 };
 
@@ -290,61 +223,19 @@ export const socialMediaController = {
 
 //#region Gallery
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = "./uploads/Gallery";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + file.originalname;
-    cb(null, uniqueSuffix);
-  },
-});
-
-const upload = multer({ storage }).single("upload");
-
 export const createGallery = async (req, res, next) => {
-  const { userId } = req.user;
+  try {
+    const { photos } = req.body;
 
-  upload(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    } else if (err) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    }
-
-    // Update the file data in MongoDB
-    const { filename, mimetype, path } = req.file;
-    const fileData = new FilesModel({
-      name: filename,
-      type: mimetype,
-      file: path,
-      used: "Gallery",
-      till: "Permanent",
-      userId,
-    });
     redisClient.del("Gallery");
-    await fileData
-      .save()
-      .then((result) => {
-        // Store data in cache for future use
-        redisClient.set(
-          "file:" + result._id.toString(),
-          JSON.stringify(result)
-        ); // Set expiry to 10 minutes
-        res.status(200).json({
-          message: "File uploaded successfully",
-          file: result,
-          fileId: result._id,
-        });
-      })
-      .catch((err) => {
-        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-      });
-  });
+
+    await updateFileTill(photos, "Gallery");
+    res
+      .status(STATUSCODE.CREATED)
+      .json({ message: "gallery photos upoaded successfully" });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // Retrieve and return all about us from the database.

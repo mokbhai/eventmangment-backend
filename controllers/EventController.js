@@ -100,8 +100,8 @@ export const createEvent = async (req, res, next) => {
       );
     }
 
-    updateFileTill([photos]);
-    updateFileTill([ruleBook]);
+    await updateFileTill([photos], "EventPhotos");
+    await updateFileTill([ruleBook], "RuleBook");
 
     // Save event to database
     const savedEvent = await newEvent.save();

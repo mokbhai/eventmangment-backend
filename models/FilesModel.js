@@ -18,7 +18,14 @@ const FileSchema = new Schema(
     used: {
       type: String,
       enum: {
-        values: ["Gallery", "RuleBook", "EventPhotos", "MediaPhotos"],
+        values: [
+          "Gallery",
+          "RuleBook",
+          "EventPhotos",
+          "MediaPhotos",
+          "ContactUs",
+          "AboutUs",
+        ],
         message: "{VALUE} is not supported as a valid relation",
       },
     },

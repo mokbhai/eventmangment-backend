@@ -28,7 +28,7 @@ const createContactUs = async (req, res, next) => {
       designation,
       photo,
     });
-    updateFileTill([photo]);
+    await updateFileTill([photo], "ContactUs");
     const savedContactUs = await newContactUs.save();
     redisClient.del("ContactUs");
     return res.status(STATUSCODE.CREATED).json(savedContactUs);
