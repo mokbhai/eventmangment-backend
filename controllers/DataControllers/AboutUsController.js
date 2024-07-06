@@ -227,9 +227,7 @@ export const createGallery = async (req, res, next) => {
 
     await updateFileTill(photos, "Gallery");
 
-    const data = { photos, video };
-
-    redisClient.set("Gallery", JSON.stringify(data));
+    redisClient.set("Gallery:Video", video);
 
     res
       .status(STATUSCODE.CREATED)
@@ -251,15 +249,29 @@ const getAllGallery = async (req, res, next) => {
     } else {
       try {
         const filter = { used: "Gallery" };
-        const data = await FilesModel.find(filter);
+        const result = await FilesModel.find(filter);
 
-        if (data.length == 0) {
+        if (result.length == 0) {
           return sendError(
             STATUSCODE.NOT_FOUND,
             "No Gallery Photos found",
             next
           );
         }
+
+        const photos = [];
+
+        result.forEach((d) => {
+          photos.push(d._id);
+        });
+
+        const video = await redisClient.get("Gallery:Video");
+
+        const data = {
+          photos,
+          video,
+        };
+
         redisClient.set("Gallery", JSON.stringify(data));
         return res.status(STATUSCODE.OK).send(data);
       } catch (err) {
