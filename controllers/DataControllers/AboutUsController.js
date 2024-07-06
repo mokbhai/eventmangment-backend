@@ -220,11 +220,16 @@ export const socialMediaController = {
 
 export const createGallery = async (req, res, next) => {
   try {
-    const { photos } = req.body;
+    const { photos, video } = req.body;
 
     redisClient.del("Gallery");
 
     await updateFileTill(photos, "Gallery");
+
+    const data = { photos, video };
+
+    redisClient.set("Gallery", JSON.stringify(data));
+
     res
       .status(STATUSCODE.CREATED)
       .json({ message: "gallery photos upoaded successfully" });
