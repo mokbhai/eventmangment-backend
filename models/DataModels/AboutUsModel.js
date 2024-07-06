@@ -75,4 +75,4 @@ export const Media = mongoose.model("Media", MediaSchema);
 
 //#endregion
 
-export default AboutUs;
+// export default AboutUs;
