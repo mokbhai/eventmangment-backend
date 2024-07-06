@@ -139,16 +139,18 @@ export const viewFile = async (req, res, next) => {
       if (result) {
         // If data is in cache, send it
         const file = JSON.parse(result);
-        if (!file || file === null || file === undefined || file.file)
-          sendError(STATUSCODE.NOT_FOUND, "File not found", next);
+        if (!file || file === null || file === undefined || !file.file)
+          return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
+
         // Redirect to the file path
         res.redirect(`/${file.file}`);
       } else {
         // If data is not in cache, fetch it from the database
         const file = await File.findById(fileId);
         // Store data in cache for future use
-        if (!file || file === null || file === undefined || file.file)
-          sendError(STATUSCODE.NOT_FOUND, "File not found", next);
+        if (!file || file === null || file === undefined || !file.file)
+          return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
+
         redisClient.set("file:" + fileId, JSON.stringify(file));
         // Redirect to the file path
         res.redirect(`/${file.file}`);
