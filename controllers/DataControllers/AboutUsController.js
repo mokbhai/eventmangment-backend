@@ -22,6 +22,7 @@ const createAboutUs = async (req, res, next) => {
   try {
     // Create a About Us file and save discription and photos
     const data = {
+      title,
       photos,
       description,
     };
