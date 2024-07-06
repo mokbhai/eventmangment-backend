@@ -26,10 +26,8 @@ const ContactUsModel = mongoose.model("ContactUs", ContactUsSchema);
 
 const MessageSchema = new Schema(
   {
-    fullname: { type: String, required: [true, "Name is required"] },
     phone: { type: String, required: [true, "Phone number is required"] },
     email: { type: String, required: [true, "Email is required"] },
-    type: { type: String, required: [true, "Message Type is required"] },
     message: {
       type: String,
       required: [true, "message is required"],

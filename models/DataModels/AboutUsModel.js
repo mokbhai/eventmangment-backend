@@ -3,18 +3,18 @@ import mongoose from "mongoose";
 
 //#region About Us
 
-const AboutUsSchema = mongoose.Schema(
-  {
-    title: { type: String, required: [true, "Title is required"] },
-    description: { type: String, required: [true, "Description is required"] },
-    isDeleted: { type: String, default: false },
-  },
-  {
-    timestamps: true,
-  }
-);
+// const AboutUsSchema = mongoose.Schema(
+//   {
+//     title: { type: String, required: [true, "Title is required"] },
+//     description: { type: String, required: [true, "Description is required"] },
+//     isDeleted: { type: String, default: false },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
 
-const AboutUs = mongoose.model("AboutUs", AboutUsSchema);
+// const AboutUs = mongoose.model("AboutUs", AboutUsSchema);
 
 //#endregion
 

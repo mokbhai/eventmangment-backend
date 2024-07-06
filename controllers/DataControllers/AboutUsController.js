@@ -1,23 +1,18 @@
 import STATUSCODE from "../../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "../ErrorHandler.js";
-import AboutUs, {
-  Media,
-  SocialMedia,
-} from "../../models/DataModels/AboutUsModel.js";
-import multer from "multer";
-import path from "path";
+import { Media, SocialMedia } from "../../models/DataModels/AboutUsModel.js";
 import FilesModel from "../../models/FilesModel.js";
 import mongoose from "mongoose";
-import fs from "fs";
 import redisClient from "../../config/redis.js";
 import { updateFileTill } from "../FilesController.js";
 
 //#region About Us
 
 const createAboutUs = async (req, res, next) => {
-  const { photos, description } = req.body;
+  const { title, photos, description } = req.body;
   validateFields(
     [
+      { field: title, message: "Title is required" },
       { field: photos, message: "Photos is required" },
       { field: description, message: "Description is required" },
     ],

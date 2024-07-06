@@ -122,23 +122,19 @@ export const contactUsController = {
 
 const createMesage = async (req, res, next) => {
   try {
-    const { fullname, phone, email, message, type } = req.body;
+    const { phone, email, message } = req.body;
     validateFields(
       [
-        { field: fullname, message: "Full name is required" },
         { field: phone, message: "Phone number is required" },
         { field: email, message: "Email Id is required" },
         { field: message, message: "Message is required" },
-        { field: type, message: "Message type is required" },
       ],
       next
     );
     const data = new MessageModel({
-      fullname,
       phone,
       email,
       message,
-      type,
     });
 
     const result = await data.save();
@@ -147,7 +143,9 @@ const createMesage = async (req, res, next) => {
       return sendError(STATUSCODE.BAD_REQUEST, "Message not saved", next);
     }
 
-    return res.status(STATUSCODE.CREATED).json("Message Saved");
+    return res
+      .status(STATUSCODE.CREATED)
+      .json({ success: true, message: "Message Saved" });
   } catch (error) {
     next(error);
   }
