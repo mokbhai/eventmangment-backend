@@ -34,13 +34,26 @@ export const uploadFile = async (req, res, next) => {
     }
 
     // Update the file data in MongoDB
+    if (!req.file) {
+      return sendError(STATUSCODE.BAD_REQUEST, "Didn't get File", next);
+    }
+
     const { filename, mimetype, path } = req.file;
-    const fileData = new File({
-      name: filename,
-      type: mimetype,
-      file: path,
-      userId,
-    });
+    const { length, width } = req.body;
+
+    const fileData = new File();
+
+    fileData.name = filename;
+    fileData.type = mimetype;
+    fileData.file = path;
+    fileData.uplodedBy = userId;
+
+    if (length) {
+      fileData.length = length;
+    }
+    if (width) {
+      fileData.width = width;
+    }
 
     await fileData
       .save()
@@ -64,7 +77,7 @@ export const uploadFile = async (req, res, next) => {
 
 export const changeFile = async (req, res, next) => {
   const { userId } = req.user;
-  const { fileId } = req.body;
+  const { fileId, width, length } = req.body;
 
   upload(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
@@ -80,13 +93,20 @@ export const changeFile = async (req, res, next) => {
     fileData.name = filename;
     fileData.type = mimetype;
     fileData.file = path;
-    fileData.userId = userId;
+    fileData.uplodedBy = userId;
+
+    if (length) {
+      fileData.length = length;
+    }
+    if (width) {
+      fileData.width = width;
+    }
 
     await fileData
       .save()
       .then((result) => {
         // Update data in cache
-        redisClient.set("file:" + fileId, JSON.stringify(result)); // Set expiry to 10 minutes
+        redisClient.set("file:" + fileId, JSON.stringify(result));
         res.status(200).json({
           message: "File uploaded successfully",
           file: result,
@@ -133,6 +153,9 @@ export const downloadFile = async (req, res, next) => {
 
 export const viewFile = async (req, res, next) => {
   const fileId = req.params.id;
+  if (!mongoose.isValidObjectId(fileId)) {
+    return sendError(STATUSCODE.BAD_REQUEST, "Invalid File Id", next);
+  }
   try {
     // Check if data is in cache
     await redisClient.get("file:" + fileId, async (err, result) => {
@@ -143,7 +166,7 @@ export const viewFile = async (req, res, next) => {
           return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
 
         // Redirect to the file path
-        res.redirect(`/${file.file}`);
+        res.redirect(`/${file.file}?length=${file.length}&width=${file.width}`);
       } else {
         // If data is not in cache, fetch it from the database
         const file = await File.findById(fileId);

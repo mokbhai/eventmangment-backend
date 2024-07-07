@@ -15,6 +15,8 @@ const FileSchema = new Schema(
         message: "{VALUE} is not supported as a valid relation",
       },
     },
+    length: { type: String },
+    width: { type: String },
     used: {
       type: String,
       enum: {
@@ -29,6 +31,7 @@ const FileSchema = new Schema(
         message: "{VALUE} is not supported as a valid relation",
       },
     },
+    uplodedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     isdeleted: { type: Boolean, default: false },
   },
   {

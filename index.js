@@ -23,18 +23,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "validator.swagger.io"],
-      childSrc: ["'self'"],
-      frameAncestors: ["'self'", "http://localhost:3000"],
-    },
-  })
-);
+// app.use(
+//   helmet.contentSecurityPolicy({
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       scriptSrc: ["'self'", "'unsafe-inline'"],
+//       styleSrc: ["'self'", "'unsafe-inline'"],
+//       imgSrc: ["'self'", "data:", "validator.swagger.io"],
+//       childSrc: ["'self'"],
+//       frameAncestors: [
+//         "'self'",
+//         "http://localhost:3000",
+//         "http://localhost:4000",
+//       ],
+//       connectSrc: ["'self'", "http://localhost:4000"],
+//     },
+//   })
+// );
+
 app.use(xss());
 app.use(mongoSanitize());
 app.use(express.json());
@@ -50,6 +56,7 @@ app.get("/", (req, res, next) => {
 app.use("/api", APIRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/views", express.static(path.join(__dirname, "views")));
 
 /// 404 Api not found
 app.use("/uploads/*", (req, res, next) => {
@@ -57,6 +64,13 @@ app.use("/uploads/*", (req, res, next) => {
   err.statusCode = 404;
   next(err);
 });
+
+app.use("/views/*", (req, res, next) => {
+  const err = new Error("Page Not Found");
+  err.statusCode = 404;
+  next(err);
+});
+
 app.use("/*", (req, res, next) => {
   const err = new Error("Api Not Found");
   err.statusCode = 404;
