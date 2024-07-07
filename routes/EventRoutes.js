@@ -16,6 +16,7 @@ import {
   updateEventType,
   updateEventUploadedBy,
   updateOrganiserName,
+  accommodationPrice,
 } from "../controllers/EventController.js";
 import userAuth from "../middlewares/authMiddleware.js";
 
@@ -24,6 +25,9 @@ const router = express.Router();
 // Route for createEvent
 router.post("/create", userAuth, createEvent);
 router.get("/filter", filterEvents);
+
+router.get("/accommodationPrice", accommodationPrice);
+
 router.get("/:eventId", getEventById);
 router.patch("/:eventId/name", updateEventName);
 router.patch("/:eventId/type", updateEventType);

@@ -588,6 +588,26 @@ export const deleteEvent = async (req, res, next) => {
   }
 };
 
+export const accommodationPrice = async (req, res, next) => {
+  await redisClient.get("Accommodation:Price", async (err, result) => {
+    if (result) {
+      // send data
+      res.status(STATUSCODE.OK).send({ success: true, price: result });
+    } else {
+      // If data is not in cache, fetch it from the database
+      const price = req.body.price;
+      // Store data in cache for future use
+      if (!price)
+        return sendError(STATUSCODE.BAD_GATEWAY, "Price not found", next);
+
+      redisClient.set("Accommodation:Price", price);
+
+      // Redirect to the file path
+      res.status(STATUSCODE.OK).send({ success: true, price });
+    }
+  });
+};
+
 const setEventRedis = ({ eventId, ex, data }) => {
   if (ex) {
     redisClient.setex("event:" + eventId, ex, JSON.stringify(data));
