@@ -16,7 +16,7 @@ const galleryRouter = express.Router();
 const { createAboutUs, getAboutUs, deleteAboutUs } = aboutUsController;
 
 aboutusRouter.get("/", getAboutUs);
-aboutusRouter.delete("/:id", userAuth, deleteAboutUs);
+aboutusRouter.delete("/", userAuth, deleteAboutUs);
 aboutusRouter.post("/create", userAuth, createAboutUs);
 
 //#endregion

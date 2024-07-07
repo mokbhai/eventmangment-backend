@@ -10,30 +10,25 @@ import { updateFileTill } from "../FilesController.js";
 
 const createAboutUs = async (req, res, next) => {
   const { title, photos, description } = req.body;
-  validateFields(
-    [
-      { field: title, message: "Title is required" },
-      { field: photos, message: "Photos is required" },
-      { field: description, message: "Description is required" },
-    ],
-    next
-  );
+  validateFields([{ field: photos, message: "Photos is required" }], next);
 
   try {
     // Create a About Us file and save discription and photos
-    const data = {
-      title,
-      photos,
-      description,
-    };
+    if (title && title !== "") {
+      await redisClient.set("AboutUs:Title", title);
+    }
+    if (description && description !== "") {
+      await redisClient.set("AboutUs:Description", description);
+    }
 
     redisClient.del("AboutUs");
 
     await updateFileTill(photos, "AboutUs");
 
-    redisClient.set("AboutUs", JSON.stringify(data));
     // Save About Us in the database
-    return res.status(STATUSCODE.CREATED).send(data);
+    return res
+      .status(STATUSCODE.CREATED)
+      .send({ success: true, message: "About Us Updated/Created" });
   } catch (err) {
     next(err);
   }
@@ -49,10 +44,30 @@ const getAboutUs = async (req, res, next) => {
     if (redisAboutUs) {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisAboutUs));
     } else {
-      return res.status(STATUSCODE.NOT_FOUND).json({
-        photos: ["NOT_FOUND"],
-        description: "NOT_FOUND",
+      const filter = { used: "AboutUs" };
+      const result = await FilesModel.find(filter);
+
+      if (result.length == 0) {
+        return sendError(STATUSCODE.NOT_FOUND, "No AboutUs Photos found", next);
+      }
+
+      const photos = [];
+
+      result.forEach((d) => {
+        photos.push(d._id);
       });
+
+      const title = await redisClient.get("AboutUs:Title");
+      const description = await redisClient.get("AboutUs:Description");
+
+      const data = {
+        photos,
+        title,
+        description,
+      };
+
+      redisClient.set("AboutUs", JSON.stringify(data));
+      return res.status(STATUSCODE.OK).send(data);
     }
   });
 };
@@ -62,15 +77,11 @@ const deleteAboutUs = async (req, res, next) => {
   try {
     redisClient.del("AboutUs");
 
-    res.send({ message: "About Us deleted successfully!" });
+    res.send({ success: true, message: "About Us deleted successfully!" });
   } catch (err) {
-    if (err.kind === "ObjectId" || err.name === "NotFound") {
-      return res.status(404).send({
-        message: "About Us not found with id " + req.params.aboutUsId,
-      });
-    }
     return res.status(500).send({
-      message: "Could not delete about us with id " + req.params.aboutUsId,
+      success: false,
+      message: "Could not delete about us",
     });
   }
 };
