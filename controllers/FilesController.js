@@ -203,6 +203,48 @@ export const viewFile = async (req, res, next) => {
   }
 };
 
+export const deleteFile = async (req, res, next) => {
+  try {
+    const fileId = req.params.id;
+
+    if (!mongoose.isValidObjectId(fileId)) {
+      return sendError(STATUSCODE.BAD_REQUEST, "File Id is not correct", next);
+    }
+
+    // deleteTempFiles();
+
+    const file = await File.findByIdAndDelete(fileId);
+
+    fs.unlinkSync(file.file);
+
+    redisClient.del("file:" + fileId);
+
+    return res
+      .status(STATUSCODE.OK)
+      .send({ success: true, message: "File Deleted" });
+  } catch (err) {
+    return sendError(
+      STATUSCODE.INTERNAL_SERVER_ERROR,
+      "File Not Deleted\n" + err,
+      next
+    );
+  }
+};
+
+export const deleteTempFiles = async () => {
+  const files = await File.find({ till: "Temprary", isdeleted: false });
+
+  for (let file of files) {
+    // Delete file from filesystem
+    try {
+      fs.unlinkSync(file.file);
+    } catch (error) {}
+
+    // Delete file reference from MongoDB
+    await File.deleteOne({ _id: file._id });
+  }
+};
+
 export const updateFileTill = async (ids, used, till = "Permanent") => {
   ids.forEach(async (id) => {
     try {

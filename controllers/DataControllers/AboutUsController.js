@@ -58,7 +58,7 @@ const getAboutUs = async (req, res, next) => {
     if (redisAboutUs) {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisAboutUs));
     } else {
-      const filter = { used: "AboutUs", till: "Permanent" };
+      const filter = { used: "AboutUs", till: "Permanent", isdeleted: false };
       const result = await FilesModel.find(filter);
 
       if (result.length == 0) {

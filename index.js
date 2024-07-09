@@ -10,6 +10,7 @@ import morgan from "morgan";
 import APIRoutes from "./routes/index.js";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import "./controllers/scheduledTasks.js";
 
 /// Security Packages
 import helmet from "helmet";
