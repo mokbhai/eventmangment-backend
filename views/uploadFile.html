@@ -139,7 +139,7 @@
       }
       
 
-      function upload(id) {
+      function upload(id, token) {
           var dropdownValue = document.querySelector('select[name="menu"]').value;
           let endpoint;
 
@@ -157,8 +157,7 @@
             body: JSON.stringify({
               photos: [id],
             }),
-          }).then((response) => response.json())
-            .then((data) => console.log(data))
+          }).catch((err)=> console.log(err))
       }
 
       // Prevent the form from submitting normally
@@ -192,7 +191,7 @@
             .then((response) => response.json())
             .then((data) => {
               console.log(data);
-              upload(data.fileId);
+              upload(data.fileId, token);
             })
             .catch((error) => console.error(error));
         });
