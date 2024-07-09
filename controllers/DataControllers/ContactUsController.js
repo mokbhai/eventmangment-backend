@@ -77,6 +77,11 @@ const updateContactUs = async (req, res, next) => {
       ],
       next
     );
+
+    const contactUs = await ContactUs.findById(id);
+    await updateFileTill([contactUs.photo], "ContactUs", "Temprary");
+    await updateFileTill([photo], "ContactUs");
+
     const updatedContactUs = await ContactUs.findByIdAndUpdate(
       id,
       { fullname, phone, email, designation, photo },
