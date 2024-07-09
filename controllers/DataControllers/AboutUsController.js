@@ -20,8 +20,22 @@ const createAboutUs = async (req, res, next) => {
     if (description && description !== "") {
       await redisClient.set("AboutUs:Description", description);
     }
+    if (photos && photos.length > 0) {
+      const filter = {
+        used: "AboutUs",
+        isDeleted: false,
+        till: "Permanent",
+      };
+      const result = await FilesModel.find(filter);
+      const aboutUsPhotos = [];
+      result.forEach((d) => {
+        aboutUsPhotos.push(d._id);
+      });
 
-    redisClient.del("AboutUs");
+      await updateFileTill(aboutUsPhotos, "AboutUs", "Temprary");
+    }
+
+    redisClient.del("AboutUs:AboutUs");
 
     await updateFileTill(photos, "AboutUs");
 
@@ -30,13 +44,13 @@ const createAboutUs = async (req, res, next) => {
       .status(STATUSCODE.CREATED)
       .send({ success: true, message: "About Us Updated/Created" });
   } catch (err) {
-    next(err);
+    return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
   }
 };
 
 // Retrieve and return all about us from the database.
 const getAboutUs = async (req, res, next) => {
-  redisClient.get("AboutUs", async (err, redisAboutUs) => {
+  redisClient.get("AboutUs:AboutUs", async (err, redisAboutUs) => {
     if (err) {
       return next(err);
     }
@@ -44,7 +58,7 @@ const getAboutUs = async (req, res, next) => {
     if (redisAboutUs) {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisAboutUs));
     } else {
-      const filter = { used: "AboutUs" };
+      const filter = { used: "AboutUs", till: "Permanent" };
       const result = await FilesModel.find(filter);
 
       if (result.length == 0) {
@@ -66,7 +80,7 @@ const getAboutUs = async (req, res, next) => {
         description,
       };
 
-      redisClient.set("AboutUs", JSON.stringify(data));
+      redisClient.set("AboutUs:AboutUs", JSON.stringify(data));
       return res.status(STATUSCODE.OK).send(data);
     }
   });

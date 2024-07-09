@@ -203,8 +203,7 @@ export const viewFile = async (req, res, next) => {
   }
 };
 
-export const updateFileTill = async (ids, used) => {
-  const till = "Permanent";
+export const updateFileTill = async (ids, used, till = "Permanent") => {
   ids.forEach(async (id) => {
     try {
       const result = await File.findByIdAndUpdate(
