@@ -238,7 +238,7 @@ export const createGallery = async (req, res, next) => {
 
     await updateFileTill(photos, "Gallery");
 
-    redisClient.set("Gallery:Video", video);
+    if (video && video !== "") redisClient.set("Gallery:Video", video);
 
     res
       .status(STATUSCODE.CREATED)

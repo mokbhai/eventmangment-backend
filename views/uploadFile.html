@@ -1,4 +1,3 @@
-<html>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -82,6 +81,11 @@
           method="post"
           enctype="multipart/form-data"
         >
+          <select name="menu">
+            <option value="gallery">Gallery</option>
+            <option value="aboutus">AboutUs</option>
+          </select>
+          
           Enter token:
           <input type="text" id="token" name="token" />
           Select image to upload:
@@ -133,6 +137,29 @@
           reader.readAsDataURL(file);
         }
       }
+      
+
+      function upload(id) {
+          var dropdownValue = document.querySelector('select[name="menu"]').value;
+          let endpoint;
+
+          if (dropdownValue === 'gallery') 
+            endpoint =  'http://localhost:4000/api/gallery/create' 
+          else if (dropdownValue === 'aboutus') 
+            endpoint = 'http://localhost:4000/api/aboutUs/create';
+
+          fetch(endpoint, {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: "Bearer " + token,
+            },
+            body: JSON.stringify({
+              photos: [id],
+            }),
+          }).then((response) => response.json())
+            .then((data) => console.log(data))
+      }
 
       // Prevent the form from submitting normally
       document
@@ -163,9 +190,13 @@
             body: formData,
           })
             .then((response) => response.json())
-            .then((data) => console.log(data))
+            .then((data) => {
+              console.log(data);
+              upload(data.fileId);
+            })
             .catch((error) => console.error(error));
         });
     </script>
   </body>
 </html>
+  
