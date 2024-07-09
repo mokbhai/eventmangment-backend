@@ -66,19 +66,20 @@ const getAllContactUs = async (req, res, next) => {
 const updateContactUs = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { fullname, phone, email, designation } = req.body;
+    const { fullname, phone, email, designation, photo } = req.body;
     validateFields(
       [
         { field: fullname, message: "Full name is required" },
         { field: phone, message: "Phone number is required" },
         { field: email, message: "Email Id is required" },
         { field: designation, message: "Designation is required" },
+        { field: photo, message: "Photo is required" },
       ],
       next
     );
     const updatedContactUs = await ContactUs.findByIdAndUpdate(
       id,
-      { fullname, phone, email, designation },
+      { fullname, phone, email, designation, photo },
       { new: true }
     );
     if (!updatedContactUs) {
