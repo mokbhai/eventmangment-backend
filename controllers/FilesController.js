@@ -243,6 +243,8 @@ export const deleteTempFiles = async () => {
     // Delete file reference from MongoDB
     await File.deleteOne({ _id: file._id });
   }
+  redisClient.del("AboutUs:AboutUs");
+  redisClient.del("Gallery");
 };
 
 export const updateFileTill = async (ids, used, till = "Permanent") => {
