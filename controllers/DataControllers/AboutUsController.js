@@ -23,8 +23,6 @@ const createAboutUs = async (req, res, next) => {
     if (photos && photos.length > 0) {
       const filter = {
         used: "AboutUs",
-        isDeleted: false,
-        till: "Permanent",
       };
       const result = await FilesModel.find(filter);
       const aboutUsPhotos = [];
