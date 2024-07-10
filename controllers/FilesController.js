@@ -56,7 +56,7 @@ export const uploadFile = async (req, res, next) => {
       const image = path;
       console.log(image);
 
-      const webpImage = await imageToWebp(image, 60);
+      const webpImage = await imageToWebp(image, 40);
       console.log(webpImage);
 
       fs.copyFileSync(webpImage, image + ".webp");
