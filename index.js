@@ -17,6 +17,7 @@ import helmet from "helmet";
 import xss from "xss-clean";
 import mongoSanitize from "express-mongo-sanitize";
 import STATUSCODE from "./Enums/HttpStatusCodes.js";
+import userAuth from "./middlewares/authMiddleware.js";
 
 //#endregion
 
@@ -52,6 +53,9 @@ app.use(morgan("dev"));
 /// Api routes
 app.get("/", (req, res, next) => {
   return res.status(STATUSCODE.OK).send("<b>Event Manangment Backend</b>");
+});
+app.get("/api/auth", userAuth, (req, res) => {
+  res.status(STATUSCODE.OK).send({ success: true, message: "Token is Valid" });
 });
 
 app.use("/api", APIRoutes);
