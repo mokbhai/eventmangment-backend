@@ -242,20 +242,18 @@ export const deleteTempFiles = async () => {
 
     // Delete file reference from MongoDB
     await File.deleteOne({ _id: file._id });
+    redisClient.del("file:" + JSON.stringify(id));
   }
-  redisClient.del("AboutUs:AboutUs");
-  redisClient.del("Gallery");
 };
 
-export const updateFileTill = async (ids, used, till = "Permanent") => {
+export const updateFileTill = async (ids, used = "", till = "Permanent") => {
   ids.forEach(async (id) => {
     try {
-      const result = await File.findByIdAndUpdate(
-        id,
-        { till, used },
-        { new: true }
-      );
-      redisClient.set("file:" + JSON.stringify(id), JSON.stringify(result));
+      const result = await File.findById(id);
+      if (used && used !== "") result.used = used;
+      result.till = till;
+      await result.save();
+      redisClient.del("file:" + JSON.stringify(id));
     } catch (error) {
       console.log(error);
     }

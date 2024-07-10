@@ -63,11 +63,14 @@ export const newRegistration = async (req, res, next) => {
     });
 
     if (paymentStatus === "Pending" || paymentStatus === "Failed") {
-      return sendError(
-        STATUSCODE.PAYMENT_REQUIRED,
-        "Payment Status " + paymentStatus,
-        next
-      );
+      return res.status(STATUSCODE.CREATED).send({
+        success: false,
+        message: "Payemet status: " + paymentStatus,
+        user: {
+          fullname: register.fullname,
+          email: register.email,
+        },
+      });
     }
 
     res.status(STATUSCODE.CREATED).send({
@@ -77,7 +80,6 @@ export const newRegistration = async (req, res, next) => {
         fullname: register.fullname,
         email: register.email,
       },
-      register,
     });
   } catch (error) {
     next(error);

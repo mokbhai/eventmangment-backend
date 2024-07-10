@@ -262,7 +262,7 @@ export const createGallery = async (req, res, next) => {
 
 // Retrieve and return all about us from the database.
 const getAllGallery = async (req, res, next) => {
-  redisClient.get("Gallery", async (err, redisData) => {
+  redisClient.get("Gallery:Gallery", async (err, redisData) => {
     if (err) {
       return next(err);
     }
@@ -271,7 +271,7 @@ const getAllGallery = async (req, res, next) => {
       return res.status(STATUSCODE.OK).json(JSON.parse(redisData));
     } else {
       try {
-        const filter = { used: "Gallery" };
+        const filter = { used: "Gallery", till: "Permanent", isdeleted: false };
         const result = await FilesModel.find(filter);
 
         if (result.length == 0) {
@@ -295,7 +295,7 @@ const getAllGallery = async (req, res, next) => {
           video,
         };
 
-        redisClient.set("Gallery", JSON.stringify(data));
+        redisClient.set("Gallery:Gallery", JSON.stringify(data));
         return res.status(STATUSCODE.OK).send(data);
       } catch (err) {
         next(err);
@@ -352,17 +352,9 @@ const deleteGallery = async (req, res, next) => {
 
     checkId(id, "Gallery Photo", next);
 
-    const data = await FilesModel.findByIdAndUpdate(
-      id,
-      { isDeleted: true },
-      { new: true }
-    );
+    await updateFileTill(id, "", "Temprary");
 
-    if (!data) {
-      return sendError(STATUSCODE.NOT_FOUND, "Gallery Photo not found", next);
-    }
-
-    redisClient.del("Gallery");
+    redisClient.del("Gallery:Gallery");
 
     res.send({ message: "Gallery Photo deleted successfully!" });
   } catch (err) {
