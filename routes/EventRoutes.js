@@ -17,6 +17,7 @@ import {
   updateEventUploadedBy,
   updateOrganiserName,
   accommodationPrice,
+  createBrochure,
 } from "../controllers/EventController.js";
 import userAuth from "../middlewares/authMiddleware.js";
 
@@ -27,20 +28,25 @@ router.post("/create", userAuth, createEvent);
 router.get("/filter", filterEvents);
 
 router.get("/accommodationPrice", accommodationPrice);
+router.post("/brochure", userAuth, createBrochure);
 
 router.get("/:eventId", getEventById);
-router.patch("/:eventId/name", updateEventName);
-router.patch("/:eventId/type", updateEventType);
-router.patch("/:eventId/description", updateEventDescription);
-router.patch("/:eventId/organiserName", updateOrganiserName);
-router.patch("/:eventId/location", updateEventLocation);
-router.patch("/:eventId/date", updateEventDate);
-router.patch("/:eventId/eligibilities", updateEventEligibilities);
-router.patch("/:eventId/rules", updateEventRules);
-router.patch("/:eventId/ruleBook", updateEventRuleBook);
-router.patch("/:eventId/contact", updateEventContact);
-router.patch("/:eventId/registrationCharges", updateEventRegistrationCharges);
-router.patch("/:eventId/uploadedBy", updateEventUploadedBy);
+router.post("/:eventId/name", userAuth, updateEventName);
+router.post("/:eventId/type", userAuth, updateEventType);
+router.post("/:eventId/description", userAuth, updateEventDescription);
+router.post("/:eventId/organiserName", userAuth, updateOrganiserName);
+router.post("/:eventId/location", userAuth, updateEventLocation);
+router.post("/:eventId/date", userAuth, updateEventDate);
+router.post("/:eventId/eligibilities", userAuth, updateEventEligibilities);
+router.post("/:eventId/rules", userAuth, updateEventRules);
+router.post("/:eventId/ruleBook", userAuth, updateEventRuleBook);
+router.post("/:eventId/contact", userAuth, updateEventContact);
+router.post(
+  "/:eventId/registrationCharges",
+  userAuth,
+  updateEventRegistrationCharges
+);
+router.post("/:eventId/uploadedBy", userAuth, updateEventUploadedBy);
 router.delete("/:eventId", userAuth, deleteEvent);
 
 export default router;

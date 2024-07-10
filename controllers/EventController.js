@@ -4,6 +4,7 @@ import EventModel from "../models/EventModel.js";
 import { isValidMongoId, sendError, validateFields } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
 import { updateFileTill } from "./FilesController.js";
+import FilesModel from "../models/FilesModel.js";
 
 export const createEvent = async (req, res, next) => {
   try {
@@ -142,14 +143,31 @@ export const filterEvents = async (req, res, next) => {
     }
     if (organiserName) filter.organiserName = new RegExp(organiserName, "i");
 
-    const events = await EventModel.find(filter);
+    redisClient.get("Event:" + JSON.stringify(filter), async (err, data) => {
+      if (data) {
+        return res.status(STATUSCODE.OK).json({
+          success: true,
+          events: JSON.parse(data),
+        });
+      }
+      const events = await EventModel.find(filter);
 
-    res.status(STATUSCODE.OK).json({
-      success: true,
-      events,
-      totalPages: totalPages,
-      currentPage: pageInt,
-      totalEvents,
+      const brochure = await getBrochure();
+
+      const eventsWithBrochure = events.map((event) => ({
+        ...event._doc,
+        brochure,
+      }));
+
+      redisClient.set(
+        "Event:" + JSON.stringify(filter),
+        JSON.stringify(eventsWithBrochure)
+      );
+
+      return res.status(STATUSCODE.OK).json({
+        success: true,
+        events: eventsWithBrochure,
+      });
     });
   } catch (error) {
     next(error);
@@ -174,12 +192,16 @@ export const getEventById = async (req, res, next) => {
     } else {
       // If the event data is not in the cache, query the database
       try {
-        const dbEvent = await EventModel.findById(eventId);
+        let dbEvent = await EventModel.findById(eventId);
 
         if (!dbEvent || dbEvent.isDeleted) {
           return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
         }
 
+        dbEvent = {
+          ...dbEvent._doc,
+          brochure,
+        };
         // Store the result in the cache
         setEventRedis({ eventId, ex: 24 * 3600, data: dbEvent });
 
@@ -591,6 +613,50 @@ export const accommodationPrice = async (req, res, next) => {
       res.status(STATUSCODE.OK).send({ success: true, price });
     }
   });
+};
+
+export const getBrochure = async () => {
+  redisClient.get("Event:Brochure", async (err, result) => {
+    if (result) {
+      // send data
+      return result;
+    } else {
+      // If data is not in cache, fetch it from the database
+      const filter = { till: "Permanent", used: "Brochure", isdeleted: false };
+      const result = await FilesModel.findOne(filter);
+      // Store data in cache for future use
+
+      if (result) {
+        await redisClient.set("Event:Brochure", JSON.stringify(result._id));
+        return result._id;
+      } else {
+        return "";
+      }
+    }
+  });
+};
+
+export const createBrochure = async (req, res, next) => {
+  const id = req.body.id;
+
+  const filter = {
+    till: "Permanent",
+    used: "Brochure",
+    isdeleted: false,
+  };
+  const results = await FilesModel.find(filter);
+  const ids = [];
+  results.forEach((result) => {
+    ids.push(result._id);
+  });
+
+  updateFileTill(ids, "", "Temprary");
+
+  updateFileTill([id], "Brochure");
+  redisClient.del("Event:Brochure");
+  res
+    .status(STATUSCODE.CREATED)
+    .send({ success: true, message: "Brochure is created" });
 };
 
 const setEventRedis = ({ eventId, ex, data }) => {
