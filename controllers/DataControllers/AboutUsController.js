@@ -352,7 +352,7 @@ const deleteGallery = async (req, res, next) => {
 
     checkId(id, "Gallery Photo", next);
 
-    await updateFileTill(id, "", "Temprary");
+    await updateFileTill([id], "", "Temprary");
 
     redisClient.del("Gallery:Gallery");
 
