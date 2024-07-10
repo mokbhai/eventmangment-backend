@@ -143,31 +143,18 @@ export const filterEvents = async (req, res, next) => {
     }
     if (organiserName) filter.organiserName = new RegExp(organiserName, "i");
 
-    redisClient.get("Event:" + JSON.stringify(filter), async (err, data) => {
-      if (data) {
-        return res.status(STATUSCODE.OK).json({
-          success: true,
-          events: JSON.parse(data),
-        });
-      }
-      const events = await EventModel.find(filter);
+    const events = await EventModel.find(filter);
 
-      const brochure = await getBrochure();
+    // const brochure = await getBrochure();
 
-      const eventsWithBrochure = events.map((event) => ({
-        ...event._doc,
-        brochure,
-      }));
+    // const eventsWithBrochure = events.map((event) => ({
+    //   ...event._doc,
+    //   brochure,
+    // }));
 
-      redisClient.set(
-        "Event:" + JSON.stringify(filter),
-        JSON.stringify(eventsWithBrochure)
-      );
-
-      return res.status(STATUSCODE.OK).json({
-        success: true,
-        events: eventsWithBrochure,
-      });
+    return res.status(STATUSCODE.OK).json({
+      success: true,
+      events,
     });
   } catch (error) {
     next(error);
@@ -181,7 +168,7 @@ export const getEventById = async (req, res, next) => {
   }
 
   // Try getting event data from Redis
-  redisClient.get("event:" + eventId, async (err, redisEvent) => {
+  redisClient.get("Event:" + eventId, async (err, redisEvent) => {
     if (err) {
       return next(err);
     }
@@ -627,7 +614,7 @@ export const getBrochure = async () => {
       // Store data in cache for future use
 
       if (result) {
-        await redisClient.set("Event:Brochure", JSON.stringify(result._id));
+        redisClient.set("Event:Brochure", JSON.stringify(result._id));
         return result._id;
       } else {
         return "";
