@@ -125,8 +125,6 @@ export const filterEvents = async (req, res, next) => {
       startDate,
       duration,
       organiserName,
-      page = 1,
-      limit = 10,
     } = req.query;
 
     // Construct filter object
@@ -144,23 +142,10 @@ export const filterEvents = async (req, res, next) => {
     }
     if (organiserName) filter.organiserName = new RegExp(organiserName, "i");
 
-    // Pagination
-    const pageInt = parseInt(page, 10);
-    let limitInt = parseInt(limit, 10);
-    if (limitInt <= 0) limitInt = 10;
-
-    const skip = (pageInt - 1) * limitInt;
-
-    const totalEvents = await EventModel.countDocuments(filter);
-    const totalPages = Math.ceil(totalEvents / limitInt);
-
-    if (pageInt > totalPages) {
-      return sendError(STATUSCODE.NOT_FOUND, "Page not found", next);
-    }
-
-    const events = await EventModel.find(filter).skip(skip).limit(limitInt);
+    const events = await EventModel.find(filter);
 
     res.status(STATUSCODE.OK).json({
+      success: true,
       events,
       totalPages: totalPages,
       currentPage: pageInt,

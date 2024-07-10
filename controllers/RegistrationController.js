@@ -2,19 +2,20 @@ import registrationModel from "../models/RegistrationModel.js";
 import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
+import { parse } from "json2csv";
 
 export const newRegistration = async (req, res, next) => {
   const {
     fullname,
     gender,
-    parentsGuardian,
-    dateOfBirth,
     phoneNumber,
     email,
     paymentStatus,
     paymentId,
-    eventId,
-    optServices,
+    eventIds,
+    isTeam,
+    team,
+    optAccomodation,
   } = req.body;
 
   try {
@@ -22,64 +23,39 @@ export const newRegistration = async (req, res, next) => {
       [
         { field: fullname, message: "Full name is required" },
         { field: gender, message: "Gender is required" },
-        {
-          field: parentsGuardian.fullname,
-          message: "Parents/Guardian fullname is required",
-        },
-        {
-          field: parentsGuardian.phoneNumber,
-          message: "Parents/Guardian phone number is required",
-        },
-        { field: parentsGuardian.relation, message: "Relation is required" },
-        { field: dateOfBirth, message: "Date of birth is required" },
         { field: phoneNumber, message: "Phone number is required" },
         { field: email, message: "Email is required" },
-        { field: paymentStatus, message: "Payment status is required" },
-        { field: paymentId, message: "Payment ID is required" },
-        { field: eventId, message: "Event ID is required" },
+        { field: eventIds, message: "Event ID is required" },
       ],
       next
     );
 
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-      return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
-      return sendError(STATUSCODE.BAD_REQUEST, "Invalid Payement ID", next);
-    }
-
     const register = await registrationModel.create({
       fullname,
       gender,
-      parentsGuardian,
-      dateOfBirth,
       phoneNumber,
       email,
+
       paymentStatus,
       paymentId,
-      eventId,
-      optServices,
+
+      isTeam,
+      team,
+
+      eventIds,
+      optAccomodation,
     });
 
-    if (paymentStatus === "Pending" || paymentStatus === "Failed") {
-      return res.status(STATUSCODE.CREATED).send({
-        success: false,
-        message: "Payemet status: " + paymentStatus,
-        user: {
-          fullname: register.fullname,
-          email: register.email,
-        },
-      });
-    }
+    const token = register.createJWT();
 
     res.status(STATUSCODE.CREATED).send({
       success: true,
-      message: "Registration successfully",
+      message: "User Registration Processed\nPayment Staus" + paymentStatus,
       user: {
         fullname: register.fullname,
         email: register.email,
       },
+      token,
     });
   } catch (error) {
     next(error);
@@ -92,10 +68,9 @@ export const filterRegistrations = async (req, res, next) => {
     gender,
     email,
     paymentStatus,
-    eventId,
     page = 1,
     limit = 10,
-  } = req.query;
+  } = req.body;
 
   try {
     const filterCriteria = { isDeleted: { $ne: true } };
@@ -104,11 +79,6 @@ export const filterRegistrations = async (req, res, next) => {
     if (gender) filterCriteria.gender = gender;
     if (email) filterCriteria.email = { $regex: email, $options: "i" };
     if (paymentStatus) filterCriteria.paymentStatus = paymentStatus;
-    if (eventId) filterCriteria.eventId = mongoose.Types.ObjectId(eventId);
-
-    if (eventId && !mongoose.Types.ObjectId.isValid(eventId)) {
-      return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
-    }
 
     // Pagination
     const pageInt = parseInt(page, 10);
@@ -120,6 +90,7 @@ export const filterRegistrations = async (req, res, next) => {
     const totalRegistrations = await registrationModel.countDocuments(
       filterCriteria
     );
+
     const totalPages = Math.ceil(totalRegistrations / limitInt);
 
     if (pageInt > totalPages) {
@@ -141,6 +112,42 @@ export const filterRegistrations = async (req, res, next) => {
       totalPages: totalPages,
       currentPage: pageInt,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadRegistrations = async (req, res, next) => {
+  const { fullname, gender, email, paymentStatus } = req.body;
+
+  try {
+    const filterCriteria = { isDeleted: { $ne: true } };
+
+    if (fullname) filterCriteria.fullname = { $regex: fullname, $options: "i" };
+    if (gender) filterCriteria.gender = gender;
+    if (email) filterCriteria.email = { $regex: email, $options: "i" };
+    if (paymentStatus) filterCriteria.paymentStatus = paymentStatus;
+
+    if (eventId && !mongoose.Types.ObjectId.isValid(eventId)) {
+      return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
+    }
+
+    const registrations = await registrationModel.find(filterCriteria);
+
+    // Convert JSON to CSV
+    const csv = parse(registrations);
+
+    // console.log(registrations);
+
+    // Set appropriate headers
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="download-${Date.now()}.csv"`
+    );
+
+    // Send CSV as a response
+    res.status(STATUSCODE.OK).end(csv);
   } catch (error) {
     next(error);
   }

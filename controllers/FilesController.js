@@ -232,7 +232,7 @@ export const deleteFile = async (req, res, next) => {
 };
 
 export const deleteTempFiles = async () => {
-  const files = await File.find({ till: "Temprary", isdeleted: false });
+  const files = await File.find({ till: "Temprary" });
 
   for (let file of files) {
     // Delete file from filesystem

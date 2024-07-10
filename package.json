@@ -24,6 +24,7 @@
     "image-to-webp": "^1.0.6",
     "ioredis": "^5.4.1",
     "isomorphic-fetch": "^3.0.0",
+    "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.1",
     "morgan": "^1.10.0",
