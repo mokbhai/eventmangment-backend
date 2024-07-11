@@ -5,7 +5,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "",
     "start": "node index.js",
     "docker": "docker-compose build && docker-compose up",
     "dev": "nodemon index.js"

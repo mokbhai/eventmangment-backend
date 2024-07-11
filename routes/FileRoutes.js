@@ -6,7 +6,7 @@ import {
   uploadFile,
   viewFile,
 } from "../controllers/FilesController.js";
-import userAuth, { cronAuth } from "../middlewares/authMiddleware.js";
+import userAuth from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -15,6 +15,6 @@ router.post("/upload", userAuth, uploadFile);
 router.get("/download/:id", downloadFile);
 router.get("/view/:id", viewFile);
 router.delete("/:id", userAuth, deleteFile);
-router.delete("/deleteTempFiles", cronAuth, deleteTempFiles);
+router.delete("/deleteTempFiles", deleteTempFiles);
 
 export default router;
