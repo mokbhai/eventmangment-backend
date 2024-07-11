@@ -1,4 +1,5 @@
 import JWT from "jsonwebtoken";
+import { CRON_SECRET } from "../ENV.js";
 
 const userAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -49,9 +50,7 @@ export const otpAuth = async (req, res, next) => {
 };
 
 export const cronAuth = async (req, res, next) => {
-  if (
-    req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (req.headers.get("Authorization") !== `Bearer ${CRON_SECRET}`) {
     return res.status(401).end("Unauthorized");
   }
   next();
