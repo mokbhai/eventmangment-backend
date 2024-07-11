@@ -48,4 +48,13 @@ export const otpAuth = async (req, res, next) => {
   }
 };
 
+export const cronAuth = async (req, res, next) => {
+  if (
+    req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return res.status(401).end("Unauthorized");
+  }
+  next();
+};
+
 export default userAuth;

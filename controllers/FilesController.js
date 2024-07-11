@@ -231,7 +231,7 @@ export const deleteFile = async (req, res, next) => {
   }
 };
 
-export const deleteTempFiles = async () => {
+export const deleteTempFiles = async (req, res) => {
   const files = await File.find({ till: "Temprary" });
 
   for (let file of files) {
@@ -244,6 +244,8 @@ export const deleteTempFiles = async () => {
     await File.deleteOne({ _id: file._id });
     redisClient.del("file:" + JSON.stringify(id));
   }
+
+  res.status(STATUSCODE.OK);
 };
 
 export const updateFileTill = async (ids, used = "", till = "Permanent") => {

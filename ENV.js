@@ -7,6 +7,7 @@ const JWT_SECRET_EXPIRY = "1d";
 const MONGODB_URI = process.env.MONGODB_URI;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const MAIL_ID = process.env.MAIL_ID;
+const CRON_SECRET = process.env.CRON_SECRET;
 
 export {
   PORT,
@@ -15,4 +16,5 @@ export {
   MONGODB_URI,
   MAIL_ID,
   APP_PASSWORD,
+  CRON_SECRET,
 };
