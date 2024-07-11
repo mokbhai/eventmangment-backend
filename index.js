@@ -22,12 +22,12 @@ import userAuth from "./middlewares/authMiddleware.js";
 
 //#endregion
 
-try {
-  fs.chmodSync("./node_modules/image-to-webp/bin/linux/cwebp", "755");
-  console.log("Changed permissions successfully");
-} catch (err) {
-  console.error("Failed to change permissions:", err);
-}
+// try {
+//   fs.chmodSync("./node_modules/image-to-webp/bin/linux/cwebp", "755");
+//   console.log("Changed permissions successfully");
+// } catch (err) {
+//   console.error("Failed to change permissions:", err);
+// }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
