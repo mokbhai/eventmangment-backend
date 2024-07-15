@@ -102,12 +102,11 @@ export const uploadFile = async (req, res, next) => {
       // fileData.file = path + ".webp";
 
       fileData.file = await uploadToCloudinary(fileData.file, fileData._id);
-      fs.unlinkSync(image);
+      fs.unlinkSync(path);
     }
 
-    if (type == "Gallery") {
-      redisClient.del("Gallery:Gallery");
-    }
+    if (type == "Gallery") redisClient.del("Gallery:Gallery");
+    if (type == "AboutUs") redisClient.del("AboutUs:AboutUs");
 
     await fileData
       .save()
