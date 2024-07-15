@@ -9,7 +9,7 @@ const FileSchema = new Schema(
     file: { type: String, required: [true, "File is required"] },
     till: {
       type: String,
-      default: "Temprary",
+      default: "Permanent",
       enum: {
         values: ["Temprary", "Permanent"],
         message: "{VALUE} is not supported as a valid relation",
