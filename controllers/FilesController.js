@@ -6,8 +6,6 @@ import fs from "fs";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
-import pkg from "image-to-webp";
-const { imageToWebp } = pkg;
 import { v2 as cloudinary } from "cloudinary";
 import {
   CLOUDINARY_API_KEY,
@@ -104,6 +102,7 @@ export const uploadFile = async (req, res, next) => {
       // fileData.file = path + ".webp";
 
       fileData.file = await uploadToCloudinary(fileData.file, fileData._id);
+      fs.unlinkSync(image);
     }
 
     if (type == "Gallery") {
