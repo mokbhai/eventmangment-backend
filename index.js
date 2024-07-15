@@ -68,6 +68,7 @@ app.get("/api/auth", userAuth, (req, res) => {
 
 app.use("/api", APIRoutes);
 
+app.use("/videos", express.static(path.join(__dirname, "videos")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/views", express.static(path.join(__dirname, "views")));
 
