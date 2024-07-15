@@ -8,6 +8,12 @@ import { sendError } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
 import pkg from "image-to-webp";
 const { imageToWebp } = pkg;
+import { v2 as cloudinary } from "cloudinary";
+import {
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
+} from "../ENV.js";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,6 +31,35 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage }).single("upload");
+
+const uploadToCloudinary = async (fileLoaction, id) => {
+  // Configuration
+  cloudinary.config({
+    cloud_name: CLOUDINARY_CLOUD_NAME,
+    api_key: CLOUDINARY_API_KEY,
+    api_secret: CLOUDINARY_API_SECRET,
+  });
+
+  // Upload an image
+  const uploadResult = await cloudinary.uploader
+    .upload(fileLoaction, {
+      public_id: id,
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
+  console.log(uploadResult);
+
+  // Optimize delivery by resizing and applying auto-format and auto-quality
+  const optimizeUrl = cloudinary.url(id, {
+    fetch_format: "auto",
+    quality: "auto",
+  });
+
+  console.log(optimizeUrl);
+  return optimizeUrl;
+};
 
 export const uploadFile = async (req, res, next) => {
   const { userId } = req.user;
@@ -51,32 +86,28 @@ export const uploadFile = async (req, res, next) => {
     fileData.file = path;
     fileData.uplodedBy = userId;
     fileData.used = type;
-
-    if (type == "Gallery") {
-      redisClient.del("Gallery:Gallery");
-    }
+    fileData._id = new mongoose.Types.ObjectId();
 
     // If the file is an image
     if (mimetype.startsWith("image/")) {
-      const image = path;
-      console.log(image);
+      // const image = path;
+      // console.log(image);
 
-      const webpImage = await imageToWebp(image, 40);
-      console.log(webpImage);
+      // const webpImage = await imageToWebp(image, 40);
+      // console.log(webpImage);
 
-      fs.copyFileSync(webpImage, image + ".webp");
-      fs.unlinkSync(image);
+      // fs.copyFileSync(webpImage, image + ".webp");
+      // fs.unlinkSync(image);
 
-      fileData.name = filename + ".webp";
-      fileData.type = "image/webp";
-      fileData.file = path + ".webp";
+      // fileData.name = filename + ".webp";
+      // fileData.type = "image/webp";
+      // fileData.file = path + ".webp";
 
-      if (length) {
-        fileData.length = length;
-      }
-      if (width) {
-        fileData.width = width;
-      }
+      fileData.file = await uploadToCloudinary(fileData.file, fileData._id);
+    }
+
+    if (type == "Gallery") {
+      redisClient.del("Gallery:Gallery");
     }
 
     await fileData
@@ -189,6 +220,9 @@ export const viewFile = async (req, res, next) => {
         if (!file || file === null || file === undefined || !file.file)
           return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
 
+        if (file.type.startsWith("image/")) {
+          return res.redirect(file.file);
+        }
         // Redirect to the file path
         res.redirect(`/${file.file}?length=${file.length}&width=${file.width}`);
       } else {
@@ -199,6 +233,11 @@ export const viewFile = async (req, res, next) => {
           return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
 
         redisClient.set("file:" + fileId, JSON.stringify(file));
+
+        if (file.type.startsWith("image/")) {
+          return res.redirect(file.file);
+        }
+
         // Redirect to the file path
         res.redirect(`/${file.file}`);
       }
