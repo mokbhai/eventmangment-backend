@@ -52,6 +52,10 @@ export const uploadFile = async (req, res, next) => {
     fileData.uplodedBy = userId;
     fileData.used = type;
 
+    if (type == "Gallery") {
+      redisClient.del("Gallery:Gallery");
+    }
+
     // If the file is an image
     if (mimetype.startsWith("image/")) {
       const image = path;
