@@ -42,7 +42,7 @@ export const uploadFile = async (req, res, next) => {
     }
 
     const { filename, mimetype, path } = req.file;
-    const { length, width } = req.body;
+    const { length, width, type } = req.body;
 
     const fileData = new File();
 
@@ -50,6 +50,7 @@ export const uploadFile = async (req, res, next) => {
     fileData.type = mimetype;
     fileData.file = path;
     fileData.uplodedBy = userId;
+    fileData.used = type;
 
     // If the file is an image
     if (mimetype.startsWith("image/")) {
