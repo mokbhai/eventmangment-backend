@@ -34,7 +34,7 @@ const registrationSchema = new Schema({
         type: String,
         required: [true, "Phone number is required"],
       },
-      email: { type: String, required: [true, "Email is required"] },
+      email: { type: String },
     },
   ],
 
@@ -59,7 +59,7 @@ const registrationSchema = new Schema({
     {
       type: Schema.Types.ObjectId,
       ref: "Event",
-      required: [true, "Event ID is required"],
+      required: [true, "Event IDs is required"],
     },
   ],
   optAccomodation: { type: Boolean, default: false },

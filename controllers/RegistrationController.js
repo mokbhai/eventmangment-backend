@@ -46,8 +46,6 @@ export const newRegistration = async (req, res, next) => {
       optAccomodation,
     });
 
-    const token = register.createJWT();
-
     res.status(STATUSCODE.CREATED).send({
       success: true,
       message: "User Registration Processed\nPayment Staus" + paymentStatus,
@@ -55,7 +53,6 @@ export const newRegistration = async (req, res, next) => {
         fullname: register.fullname,
         email: register.email,
       },
-      token,
     });
   } catch (error) {
     next(error);
