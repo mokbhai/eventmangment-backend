@@ -8,4 +8,24 @@ const redisClient = new Redis({
   db: 0,
 });
 
+export const redisDeleteKeysByPattern = async (pattern) => {
+  let cursor = "0";
+  do {
+    const [newCursor, keys] = await redisClient.scan(cursor, "MATCH", pattern);
+    if (keys.length > 0) {
+      await redisClient.del(...keys);
+    }
+    cursor = newCursor;
+  } while (cursor !== "0");
+};
+
+// // Usage
+// redisDeleteKeysByPattern("filterProducts*")
+//   .then(() => {
+//     console.log("Keys deleted successfully");
+//   })
+//   .catch((error) => {
+//     console.error("Error deleting keys:", error);
+//   });
+
 export default redisClient;

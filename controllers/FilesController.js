@@ -40,8 +40,8 @@ cloudinary.config({
 export const deleteImgsFromCloudinary = (publicId) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(
-      publicId.trim(), // is the public_id field in the resource object
-      { resource_type: "raw" }, // tell the resource type you want to delete (image, raw, video)
+      publicId,
+      { resource_type: "raw" },
       (error, result) => {
         if (error) {
           reject(error);

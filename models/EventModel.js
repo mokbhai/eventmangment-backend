@@ -23,15 +23,7 @@ const eventSchema = new Schema(
       state: { type: String, required: [true, "State is required"] },
       country: { type: String, required: [true, "Country is required"] },
     },
-    // date: {
-    // duration: { type: Number },
-    // startDate: { type: Date, required: [true, "Start date is required"] },
-    // endDate: { type: Date, required: [true, "End date is required"] },
-    // lastDateOfRegistration: {
-    //   type: Date,
-    //   required: [true, "Last date of registration is required"],
-    // },
-    // },
+    eventDate: { type: Date, required: [true, "Event date is required"] },
     day: {
       type: Number,
       required: [true, "Day of Event is required"],

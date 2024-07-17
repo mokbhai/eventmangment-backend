@@ -17,7 +17,7 @@ import {
   updateEventUploadedBy,
   updateOrganiserName,
   accommodationPrice,
-  createBrochure,
+  deleteBrochure,
 } from "../controllers/EventController.js";
 import userAuth from "../middlewares/authMiddleware.js";
 
@@ -28,7 +28,7 @@ router.post("/create", userAuth, createEvent);
 router.get("/filter", filterEvents);
 
 router.get("/accommodationPrice", accommodationPrice);
-router.post("/brochure", userAuth, createBrochure);
+router.delete("/brochure", userAuth, deleteBrochure);
 
 router.get("/:eventId", getEventById);
 router.post("/:eventId/name", userAuth, updateEventName);

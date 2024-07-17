@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import EventModel from "../models/EventModel.js";
 import { isValidMongoId, sendError, validateFields } from "./ErrorHandler.js";
-import redisClient from "../config/redis.js";
+import redisClient, { redisDeleteKeysByPattern } from "../config/redis.js";
 import {
   deleteFile,
   deleteFileFunction,
@@ -18,6 +18,7 @@ export const createEvent = async (req, res, next) => {
       description,
       organiserName,
       location,
+      eventDate,
       day,
       shift,
       structure,
@@ -34,6 +35,7 @@ export const createEvent = async (req, res, next) => {
     validateFields(
       [
         { field: eventName, message: "Event name is required" },
+        { field: eventDate, message: "Event date is required" },
         { field: eventType, message: "Event type is required" },
         { field: description, message: "Description is required" },
         { field: photos, message: "Photos is required" },
@@ -85,6 +87,7 @@ export const createEvent = async (req, res, next) => {
       description,
       organiserName,
       location,
+      eventDate,
       day,
       shift,
       structure,
@@ -119,38 +122,48 @@ export const createEvent = async (req, res, next) => {
 };
 
 export const filterEvents = async (req, res, next) => {
-  try {
-    // Construct filter object
-    let filter = { isDeleted: { $ne: true } };
+  redisClient.get("Event:Events", async (err, redisEvents) => {
+    if (redisEvents) {
+      return res.status(STATUSCODE.OK).json({
+        success: true,
+        events: JSON.parse(redisEvents),
+      });
+    }
+    try {
+      // Construct filter object
+      let filter = { isDeleted: { $ne: true } };
 
-    const events = await EventModel.find(filter);
+      const events = await EventModel.find(filter);
 
-    const brochure = await getBrochure();
+      const brochure = await getBrochure();
 
-    events.sort((a, b) => {
-      // Sort by day first
-      if (a.day < b.day) return -1;
-      if (a.day > b.day) return 1;
+      events.sort((a, b) => {
+        // Sort by day first
+        if (a.day < b.day) return -1;
+        if (a.day > b.day) return 1;
 
-      // If day is the same, sort by shift
-      if (a.shift < b.shift) return -1;
-      if (a.shift > b.shift) return 1;
+        // If day is the same, sort by shift
+        if (a.shift < b.shift) return -1;
+        if (a.shift > b.shift) return 1;
 
-      return 0;
-    });
+        return 0;
+      });
 
-    const eventsWithBrochure = events.map((event) => ({
-      ...event._doc,
-      brochure,
-    }));
+      const eventsWithBrochure = events.map((event) => ({
+        ...event._doc,
+        brochure,
+      }));
 
-    return res.status(STATUSCODE.OK).json({
-      success: true,
-      events: eventsWithBrochure,
-    });
-  } catch (error) {
-    next(error);
-  }
+      setEventRedis({ eventId: "Events", data: eventsWithBrochure });
+
+      return res.status(STATUSCODE.OK).json({
+        success: true,
+        events: eventsWithBrochure,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 };
 
 export const getEventById = async (req, res, next) => {
@@ -622,6 +635,7 @@ export const accommodationPrice = async (req, res, next) => {
     }
   });
 };
+
 export const getBrochure = () => {
   return new Promise((resolve, reject) => {
     redisClient.get("Event:Brochure", async (err, result) => {
@@ -652,9 +666,7 @@ export const getBrochure = () => {
   });
 };
 
-export const createBrochure = async (req, res, next) => {
-  const id = req.body.id;
-
+export const deleteBrochure = async (req, res, next) => {
   const filter = {
     till: "Permanent",
     used: "Brochure",
@@ -664,11 +676,11 @@ export const createBrochure = async (req, res, next) => {
   const results = await FilesModel.find(filter);
 
   results.forEach((result) => {
-    deleteFile(result._id);
+    deleteFileFunction(result._id);
   });
 
-  updateFileTill([id], "Brochure");
-  redisClient.del("Event:Brochure");
+  await redisDeleteKeysByPattern("Event:*");
+  await redisDeleteKeysByPattern("event:*");
 
   res
     .status(STATUSCODE.CREATED)
