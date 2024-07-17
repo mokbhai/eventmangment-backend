@@ -87,7 +87,7 @@ const getAboutUs = async (req, res, next) => {
 // Delete a about us with the specified aboutUsId in the request
 const deleteAboutUs = async (req, res, next) => {
   try {
-    redisClient.del("AboutUs");
+    redisClient.del("AboutUs:AboutUs");
 
     res.send({ success: true, message: "About Us deleted successfully!" });
   } catch (err) {

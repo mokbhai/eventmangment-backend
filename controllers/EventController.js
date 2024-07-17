@@ -3,7 +3,11 @@ import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import EventModel from "../models/EventModel.js";
 import { isValidMongoId, sendError, validateFields } from "./ErrorHandler.js";
 import redisClient from "../config/redis.js";
-import { updateFileTill } from "./FilesController.js";
+import {
+  deleteFile,
+  deleteFileFunction,
+  updateFileTill,
+} from "./FilesController.js";
 import FilesModel from "../models/FilesModel.js";
 
 export const createEvent = async (req, res, next) => {
@@ -14,12 +18,14 @@ export const createEvent = async (req, res, next) => {
       description,
       organiserName,
       location,
-      date,
+      day,
+      shift,
+      structure,
       eligibilities,
       rules,
       ruleBook,
-      contact,
-      registrationCharges,
+      contacts,
+      registrationCharge,
       photos,
     } = req.body;
     const uploadedBy = req.user.userId;
@@ -32,6 +38,7 @@ export const createEvent = async (req, res, next) => {
         { field: description, message: "Description is required" },
         { field: photos, message: "Photos is required" },
         { field: organiserName, message: "Organiser name is required" },
+        { field: structure, message: "Structure is required" },
         {
           field: location && location.landmark,
           message: "Location landmark is required",
@@ -49,20 +56,16 @@ export const createEvent = async (req, res, next) => {
           message: "Location country is required",
         },
         {
-          field: date && date.startDate,
-          message: "Event start date is required",
+          field: day,
+          message: "Day of Event is required",
         },
-        { field: date && date.endDate, message: "Event end date is required" },
-        {
-          field: date && date.lastDateOfRegistration,
-          message: "Last date of registration is required",
-        },
+        { field: shift, message: "Shift of Event is required" },
         { field: eligibilities, message: "Eligibilities are required" },
         { field: rules, message: "Rules are required" },
         { field: ruleBook, message: "Rule book is required" },
-        { field: contact, message: "Contact information is required" },
+        { field: contacts, message: "Contacts information is required" },
         {
-          field: registrationCharges,
+          field: registrationCharge,
           message: "Registration charges are required",
         },
         { field: uploadedBy, message: "Uploader information is required" },
@@ -82,12 +85,14 @@ export const createEvent = async (req, res, next) => {
       description,
       organiserName,
       location,
-      date,
+      day,
+      shift,
+      structure,
       eligibilities,
       rules,
       ruleBook,
-      contact,
-      registrationCharges,
+      contacts,
+      registrationCharge,
       photos,
       uploadedBy,
     });
@@ -101,15 +106,12 @@ export const createEvent = async (req, res, next) => {
       );
     }
 
-    await updateFileTill([photos], "EventPhotos");
+    await updateFileTill(photos, "EventPhotos");
     await updateFileTill([ruleBook], "RuleBook");
 
     // Save event to database
     const savedEvent = await newEvent.save();
-    setEventRedis({
-      eventId: JSON.stringify(savedEvent._id),
-      data: savedEvent,
-    });
+
     res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);
@@ -118,43 +120,33 @@ export const createEvent = async (req, res, next) => {
 
 export const filterEvents = async (req, res, next) => {
   try {
-    const {
-      eventType,
-      city,
-      state,
-      country,
-      startDate,
-      duration,
-      organiserName,
-    } = req.query;
-
     // Construct filter object
     let filter = { isDeleted: { $ne: true } };
 
-    if (eventType) filter.eventType = eventType;
-    if (city) filter["location.city"] = city;
-    if (state) filter["location.state"] = state;
-    if (country) filter["location.country"] = country;
-    if (startDate) {
-      filter["date.startDate"] = { $gte: new Date(startDate) };
-    }
-    if (duration) {
-      filter["date.duration"] = { $lte: parseInt(duration, 10) };
-    }
-    if (organiserName) filter.organiserName = new RegExp(organiserName, "i");
-
     const events = await EventModel.find(filter);
 
-    // const brochure = await getBrochure();
+    const brochure = getBrochure();
 
-    // const eventsWithBrochure = events.map((event) => ({
-    //   ...event._doc,
-    //   brochure,
-    // }));
+    events.sort((a, b) => {
+      // Sort by day first
+      if (a.day < b.day) return -1;
+      if (a.day > b.day) return 1;
+
+      // If day is the same, sort by shift
+      if (a.shift < b.shift) return -1;
+      if (a.shift > b.shift) return 1;
+
+      return 0;
+    });
+
+    const eventsWithBrochure = events.map((event) => ({
+      ...event._doc,
+      brochure,
+    }));
 
     return res.status(STATUSCODE.OK).json({
       success: true,
-      events,
+      events: eventsWithBrochure,
     });
   } catch (error) {
     next(error);
@@ -189,8 +181,9 @@ export const getEventById = async (req, res, next) => {
           ...dbEvent._doc,
           brochure,
         };
+
         // Store the result in the cache
-        setEventRedis({ eventId, ex: 24 * 3600, data: dbEvent });
+        setEventRedis({ eventId, data: dbEvent });
 
         return res.status(STATUSCODE.OK).json(dbEvent);
       } catch (error) {
@@ -338,20 +331,18 @@ export const updateEventLocation = async (req, res, next) => {
   }
 };
 
-export const updateEventDate = async (req, res, next) => {
+export const updateEventDay = async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const { startDate, endDate, lastDateOfRegistration } = req.body.date;
+    const { Day } = req.body.date;
 
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
     }
 
-    const date = { startDate, endDate, lastDateOfRegistration };
-
     const event = await EventModel.findByIdAndUpdate(
       eventId,
-      { date },
+      { day },
       { new: true }
     );
 
@@ -379,6 +370,33 @@ export const updateEventEligibilities = async (req, res, next) => {
     const event = await EventModel.findByIdAndUpdate(
       eventId,
       { eligibilities },
+      { new: true }
+    );
+
+    if (!event) {
+      return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
+    }
+
+    delEventRedis(eventId);
+
+    res.status(STATUSCODE.OK).json(event);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEventStructure = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const { structure } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
+    }
+
+    const event = await EventModel.findByIdAndUpdate(
+      eventId,
+      { structure },
       { new: true }
     );
 
@@ -430,17 +448,20 @@ export const updateEventPhotos = async (req, res, next) => {
       return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
     }
 
-    const event = await EventModel.findByIdAndUpdate(
-      eventId,
-      { photos },
-      { new: true }
-    );
-
     if (!event) {
       return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
+    const event = await EventModel.findById(eventId);
+
+    updateFileTill([event.photos], "", "Temporary");
+    updateFileTill([photos], "EventPhotos");
+
+    event.photos = photos;
+
     delEventRedis(eventId);
+
+    await event.save();
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
@@ -602,15 +623,15 @@ export const accommodationPrice = async (req, res, next) => {
   });
 };
 
-export const getBrochure = async () => {
-  redisClient.get("Event:Brochure", async (err, result) => {
+export const getBrochure = () => {
+  redisClient.get("Event:Brochure", (err, result) => {
     if (result) {
       // send data
       return result;
     } else {
       // If data is not in cache, fetch it from the database
       const filter = { till: "Permanent", used: "Brochure", isdeleted: false };
-      const result = await FilesModel.findOne(filter);
+      const result = FilesModel.findOne(filter);
       // Store data in cache for future use
 
       if (result) {
@@ -631,16 +652,16 @@ export const createBrochure = async (req, res, next) => {
     used: "Brochure",
     isdeleted: false,
   };
-  const results = await FilesModel.find(filter);
-  const ids = [];
-  results.forEach((result) => {
-    ids.push(result._id);
-  });
 
-  updateFileTill(ids, "", "Temprary");
+  const results = await FilesModel.find(filter);
+
+  results.forEach((result) => {
+    deleteFile(result._id);
+  });
 
   updateFileTill([id], "Brochure");
   redisClient.del("Event:Brochure");
+
   res
     .status(STATUSCODE.CREATED)
     .send({ success: true, message: "Brochure is created" });
@@ -648,12 +669,12 @@ export const createBrochure = async (req, res, next) => {
 
 const setEventRedis = ({ eventId, ex, data }) => {
   if (ex) {
-    redisClient.setex("event:" + eventId, ex, JSON.stringify(data));
+    redisClient.setex("Event:" + eventId, ex, JSON.stringify(data));
   } else {
-    redisClient.set("event:" + eventId, JSON.stringify(data));
+    redisClient.set("Event:" + eventId, JSON.stringify(data));
   }
 };
 
 const delEventRedis = ({ id }) => {
-  redisClient.del("event:" + id);
+  redisClient.del("Event:" + id);
 };

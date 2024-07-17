@@ -12,6 +12,7 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../ENV.js";
+import { error } from "console";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -23,21 +24,36 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const extension = file.originalname.split(".").pop();
-    const uniqueSuffix = Date.now() + "-" + extension;
+    const uniqueSuffix = Date.now() + "." + extension;
     cb(null, uniqueSuffix);
   },
 });
 
 const upload = multer({ storage }).single("upload");
 
-const uploadToCloudinary = async (fileLoaction, id) => {
-  // Configuration
-  cloudinary.config({
-    cloud_name: CLOUDINARY_CLOUD_NAME,
-    api_key: CLOUDINARY_API_KEY,
-    api_secret: CLOUDINARY_API_SECRET,
-  });
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+});
 
+export const deleteImgsFromCloudinary = (publicId) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(
+      publicId.trim(), // is the public_id field in the resource object
+      { resource_type: "raw" }, // tell the resource type you want to delete (image, raw, video)
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+  });
+};
+
+const uploadToCloudinary = async (fileLoaction, id) => {
   // Upload an image
   const uploadResult = await cloudinary.uploader
     .upload(fileLoaction, {
@@ -47,7 +63,7 @@ const uploadToCloudinary = async (fileLoaction, id) => {
       console.log(error);
     });
 
-  console.log(uploadResult);
+  // console.log(uploadResult);
 
   // Optimize delivery by resizing and applying auto-format and auto-quality
   const optimizeUrl = cloudinary.url(id, {
@@ -55,7 +71,7 @@ const uploadToCloudinary = async (fileLoaction, id) => {
     quality: "auto",
   });
 
-  console.log(optimizeUrl);
+  // console.log(optimizeUrl);
   return optimizeUrl;
 };
 
@@ -75,7 +91,7 @@ export const uploadFile = async (req, res, next) => {
     }
 
     const { filename, mimetype, path } = req.file;
-    const { length, width, type } = req.body;
+    const { type } = req.body;
 
     const fileData = new File();
 
@@ -249,27 +265,39 @@ export const deleteFile = async (req, res, next) => {
   try {
     const fileId = req.params.id;
 
-    if (!mongoose.isValidObjectId(fileId)) {
-      return sendError(STATUSCODE.BAD_REQUEST, "File Id is not correct", next);
-    }
+    const responce = await deleteFileFunction(fileId);
 
-    // deleteTempFiles();
-
-    const file = await File.findByIdAndDelete(fileId);
-
-    fs.unlinkSync(file.file);
-
-    redisClient.del("file:" + fileId);
-
-    return res
-      .status(STATUSCODE.OK)
-      .send({ success: true, message: "File Deleted" });
+    return res.status(STATUSCODE.OK).send(responce);
   } catch (err) {
     return sendError(
       STATUSCODE.INTERNAL_SERVER_ERROR,
       "File Not Deleted\n" + err,
       next
     );
+  }
+};
+
+export const deleteFileFunction = async (fileId) => {
+  try {
+    if (!mongoose.isValidObjectId(fileId)) {
+      return { success: false, message: "File Id is not Correct" };
+    }
+
+    // deleteTempFiles();
+
+    const file = await File.findByIdAndDelete(fileId);
+
+    if (file.type.startsWith("image/")) deleteImgsFromCloudinary(fileId);
+    if (file.used === "Gallery") redisClient.del("Gallery:Gallery");
+    if (file.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
+
+    fs.unlinkSync(file.file);
+
+    redisClient.del("file:" + fileId);
+
+    return { success: true, message: "File Deleted" };
+  } catch (err) {
+    return { success: false, message: "File Deleted failed\n" + error };
   }
 };
 
@@ -281,6 +309,8 @@ export const deleteTempFiles = async (req, res) => {
     try {
       fs.unlinkSync(file.file);
     } catch (error) {}
+
+    if (file.type.startsWith("image/")) deleteImgsFromCloudinary(file._id);
 
     // Delete file reference from MongoDB
     await File.deleteOne({ _id: file._id });

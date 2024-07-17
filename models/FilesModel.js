@@ -11,7 +11,7 @@ const FileSchema = new Schema(
       type: String,
       default: "Permanent",
       enum: {
-        values: ["Temprary", "Permanent"],
+        values: ["Temporary", "Permanent"],
         message: "{VALUE} is not supported as a valid relation",
       },
     },

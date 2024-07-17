@@ -23,15 +23,28 @@ const eventSchema = new Schema(
       state: { type: String, required: [true, "State is required"] },
       country: { type: String, required: [true, "Country is required"] },
     },
-    date: {
-      duration: { type: Number },
-      startDate: { type: Date, required: [true, "Start date is required"] },
-      endDate: { type: Date, required: [true, "End date is required"] },
-      lastDateOfRegistration: {
-        type: Date,
-        required: [true, "Last date of registration is required"],
+    // date: {
+    // duration: { type: Number },
+    // startDate: { type: Date, required: [true, "Start date is required"] },
+    // endDate: { type: Date, required: [true, "End date is required"] },
+    // lastDateOfRegistration: {
+    //   type: Date,
+    //   required: [true, "Last date of registration is required"],
+    // },
+    // },
+    day: {
+      type: Number,
+      required: [true, "Day of Event is required"],
+    },
+    shift: {
+      type: String,
+      required: [true, "Shift of Event is required"],
+      enum: {
+        values: ["Morning", "Evening"],
+        message: "{VALUE} is not supported as a valid relation",
       },
     },
+    structure: [{ type: String, required: [true, "Structure are required"] }],
     eligibilities: [
       { type: String, required: [true, "eligibilities are required"] },
     ],
@@ -41,7 +54,7 @@ const eventSchema = new Schema(
       ref: "File",
       required: [true, "Rules are required"],
     },
-    contact: [
+    contacts: [
       {
         name: {
           type: String,
@@ -53,30 +66,23 @@ const eventSchema = new Schema(
         },
       },
     ],
-    registrationCharges: [
-      {
-        name: {
-          type: String,
-          required: [true, "Charges Information is required"],
-          default: "Registration Charge",
-        },
-        currency: {
-          type: String,
-          required: [true, "Charges Information is required"],
-          default: "INR",
-        },
-        amount: {
-          type: String,
-          required: [true, "Charges Information is required"],
-          default: "0",
-        },
-        isMandatory: {
-          type: Boolean,
-          required: [true, "Charges Information is required"],
-          default: false,
-        },
+    registrationCharge: {
+      currency: {
+        type: String,
+        required: [true, "Charges Information is required"],
+        default: "INR",
       },
-    ],
+      amount: {
+        type: String,
+        required: [true, "Charges Information is required"],
+        default: "0",
+      },
+      isMandatory: {
+        type: Boolean,
+        required: [true, "Charges Information is required"],
+        default: false,
+      },
+    },
     uplodedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     isDeleted: { type: Boolean, default: false },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -87,12 +93,6 @@ const eventSchema = new Schema(
 );
 
 eventSchema.pre("save", function (next) {
-  if (this.date.startDate && this.date.endDate) {
-    const start = new Date(this.date.startDate);
-    const end = new Date(this.date.endDate);
-    const duration = Math.abs(end - start) / 36e5;
-    this.date.duration = duration;
-  }
   next();
 });
 

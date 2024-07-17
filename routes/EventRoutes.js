@@ -5,7 +5,7 @@ import {
   filterEvents,
   getEventById,
   updateEventContact,
-  updateEventDate,
+  updateEventDay,
   updateEventDescription,
   updateEventEligibilities,
   updateEventLocation,
@@ -36,7 +36,7 @@ router.post("/:eventId/type", userAuth, updateEventType);
 router.post("/:eventId/description", userAuth, updateEventDescription);
 router.post("/:eventId/organiserName", userAuth, updateOrganiserName);
 router.post("/:eventId/location", userAuth, updateEventLocation);
-router.post("/:eventId/date", userAuth, updateEventDate);
+router.post("/:eventId/date", userAuth, updateEventDay);
 router.post("/:eventId/eligibilities", userAuth, updateEventEligibilities);
 router.post("/:eventId/rules", userAuth, updateEventRules);
 router.post("/:eventId/ruleBook", userAuth, updateEventRuleBook);
