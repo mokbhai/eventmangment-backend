@@ -125,7 +125,7 @@ export const filterEvents = async (req, res, next) => {
 
     const events = await EventModel.find(filter);
 
-    const brochure = getBrochure();
+    const brochure = await getBrochure();
 
     events.sort((a, b) => {
       // Sort by day first
@@ -622,25 +622,33 @@ export const accommodationPrice = async (req, res, next) => {
     }
   });
 };
-
 export const getBrochure = () => {
-  redisClient.get("Event:Brochure", (err, result) => {
-    if (result) {
-      // send data
-      return result;
-    } else {
-      // If data is not in cache, fetch it from the database
-      const filter = { till: "Permanent", used: "Brochure", isdeleted: false };
-      const result = FilesModel.findOne(filter);
-      // Store data in cache for future use
-
-      if (result) {
-        redisClient.set("Event:Brochure", JSON.stringify(result._id));
-        return result._id;
-      } else {
-        return "";
+  return new Promise((resolve, reject) => {
+    redisClient.get("Event:Brochure", async (err, result) => {
+      if (err) {
+        reject(err);
       }
-    }
+      if (result) {
+        // send data
+        resolve(result);
+      } else {
+        // If data is not in cache, fetch it from the database
+        const filter = {
+          till: "Permanent",
+          used: "Brochure",
+          isdeleted: false,
+        };
+        const result = await FilesModel.findOne(filter);
+        // Store data in cache for future use
+
+        if (result) {
+          redisClient.set("Event:Brochure", result._id);
+          resolve(result._id);
+        } else {
+          resolve("");
+        }
+      }
+    });
   });
 };
 

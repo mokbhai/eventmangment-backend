@@ -288,10 +288,18 @@ export const deleteFileFunction = async (fileId) => {
     const file = await File.findByIdAndDelete(fileId);
 
     if (file.type.startsWith("image/")) deleteImgsFromCloudinary(fileId);
+    else {
+      try {
+        fs.unlinkSync(file.file);
+      } catch (error) {
+        return {
+          success: false,
+          message: "File Deleted failed as file not found\n" + error,
+        };
+      }
+    }
     if (file.used === "Gallery") redisClient.del("Gallery:Gallery");
     if (file.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
-
-    fs.unlinkSync(file.file);
 
     redisClient.del("file:" + fileId);
 
