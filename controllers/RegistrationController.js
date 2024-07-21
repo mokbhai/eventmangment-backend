@@ -10,11 +10,10 @@ export const newRegistration = async (req, res, next) => {
     gender,
     phoneNumber,
     email,
-    paymentStatus,
-    paymentId,
     eventIds,
     team,
     optAccomodation,
+    amount,
   } = req.body;
 
   try {
@@ -35,18 +34,20 @@ export const newRegistration = async (req, res, next) => {
       phoneNumber,
       email,
 
-      paymentStatus,
-      paymentId,
-
       team,
+
+      amount,
 
       eventIds,
       optAccomodation,
     });
 
+    const result = await register.save();
+
     res.status(STATUSCODE.CREATED).send({
       success: true,
-      message: "User Registration Processed\nPayment Staus" + paymentStatus,
+      message: "User Registration Processed\nPayment Staus: Pending",
+      registrationId: result._id,
       user: {
         fullname: register.fullname,
         email: register.email,

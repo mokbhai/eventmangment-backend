@@ -38,7 +38,6 @@ const registrationSchema = new Schema({
   payment: {
     paymentStatus: {
       type: String,
-      required: [true, "Payment Status is required"],
       enum: {
         values: ["Completed", "Pending", "Failed", "Refundend"],
         message: "{VALUE} is not supported",
