@@ -5,41 +5,29 @@ import { sendError, validateFields } from "./ErrorHandler.js";
 import { parse } from "json2csv";
 
 export const newRegistration = async (req, res, next) => {
-  const {
-    fullname,
-    gender,
-    phoneNumber,
-    email,
-    eventIds,
-    team,
-    optAccomodation,
-    amount,
-  } = req.body;
+  const { teamName, teamLeaderName, team, eventIds, amount } = req.body;
 
   try {
     validateFields(
       [
-        { field: fullname, message: "Full name is required" },
-        { field: phoneNumber, message: "Phone number is required" },
-        { field: email, message: "Email is required" },
+        { field: teamName, message: "Team name is required" },
+        { field: teamLeaderName, message: "Team Leader Name is required" },
         { field: eventIds, message: "Event ID is required" },
-        { field: team, message: "Event ID is required" },
+        { field: team, message: "Team Member details are required" },
+        { field: amount, message: "Amount is required" },
       ],
       next
     );
 
     const register = await registrationModel.create({
-      fullname,
-      gender,
-      phoneNumber,
-      email,
+      teamName,
+      teamLeaderName,
 
       team,
 
       amount,
 
       eventIds,
-      optAccomodation,
     });
 
     const result = await register.save();
@@ -49,8 +37,8 @@ export const newRegistration = async (req, res, next) => {
       message: "User Registration Processed\nPayment Staus: Pending",
       registrationId: result._id,
       user: {
-        fullname: register.fullname,
-        email: register.email,
+        fullname: teamLeaderName,
+        email: register.team[0].email,
       },
     });
   } catch (error) {

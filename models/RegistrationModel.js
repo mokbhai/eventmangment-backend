@@ -2,17 +2,11 @@ import { Schema, model } from "mongoose";
 
 const registrationSchema = new Schema({
   // Self
-  fullname: { type: String, required: [true, "Fullname is required"] },
-  gender: {
+  teamName: { type: String, required: [true, "Team Name is required"] },
+  teamLeaderName: {
     type: String,
-    enum: {
-      values: ["Male", "Female", "Other"],
-      message: "{VALUE} is not supported",
-    },
+    required: [true, "Fullname of Team Leader is required"],
   },
-  phoneNumber: { type: String, required: [true, "Phone number is required"] },
-  email: { type: String, required: [true, "Email is required"] },
-
   team: [
     {
       fullname: {
@@ -31,6 +25,7 @@ const registrationSchema = new Schema({
         required: [true, "Phone number is required"],
       },
       email: { type: String },
+      optAccomodation: { type: Boolean, default: false },
     },
   ],
 
@@ -58,7 +53,6 @@ const registrationSchema = new Schema({
       required: [true, "Event IDs is required"],
     },
   ],
-  optAccomodation: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
 });
 

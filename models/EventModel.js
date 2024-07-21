@@ -49,11 +49,11 @@ const eventSchema = new Schema(
     participants: {
       min: {
         type: Number,
-        required: [true, "Minimum Number of participants are required"],
+        default: 2,
       },
       max: {
         type: Number,
-        required: [true, "Maximum Number of participants are required"],
+        default: 4,
       },
     },
     contacts: [
