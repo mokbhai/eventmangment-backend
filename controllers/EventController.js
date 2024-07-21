@@ -23,6 +23,7 @@ export const createEvent = async (req, res, next) => {
       shift,
       structure,
       eligibilities,
+      participants,
       rules,
       ruleBook,
       contacts,
@@ -35,6 +36,7 @@ export const createEvent = async (req, res, next) => {
     validateFields(
       [
         { field: eventName, message: "Event name is required" },
+        { field: participants, message: "Participants is required" },
         { field: eventDate, message: "Event date is required" },
         { field: eventType, message: "Event type is required" },
         { field: description, message: "Description is required" },
@@ -93,6 +95,7 @@ export const createEvent = async (req, res, next) => {
       structure,
       eligibilities,
       rules,
+      participants,
       ruleBook,
       contacts,
       registrationCharge,
@@ -347,7 +350,7 @@ export const updateEventLocation = async (req, res, next) => {
 export const updateEventDay = async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const { Day } = req.body.date;
+    const { day } = req.body.date;
 
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);

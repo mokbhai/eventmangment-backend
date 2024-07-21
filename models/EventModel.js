@@ -46,6 +46,16 @@ const eventSchema = new Schema(
       ref: "File",
       required: [true, "Rules are required"],
     },
+    participants: {
+      min: {
+        type: Number,
+        required: [true, "Minimum Number of participants are required"],
+      },
+      max: {
+        type: Number,
+        required: [true, "Maximum Number of participants are required"],
+      },
+    },
     contacts: [
       {
         name: {

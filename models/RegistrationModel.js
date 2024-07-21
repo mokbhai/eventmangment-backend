@@ -5,7 +5,6 @@ const registrationSchema = new Schema({
   fullname: { type: String, required: [true, "Fullname is required"] },
   gender: {
     type: String,
-    required: [true, "Gender is required"],
     enum: {
       values: ["Male", "Female", "Other"],
       message: "{VALUE} is not supported",
@@ -14,8 +13,6 @@ const registrationSchema = new Schema({
   phoneNumber: { type: String, required: [true, "Phone number is required"] },
   email: { type: String, required: [true, "Email is required"] },
 
-  // Team
-  isTeam: { type: Boolean, default: false },
   team: [
     {
       fullname: {
@@ -24,7 +21,6 @@ const registrationSchema = new Schema({
       },
       gender: {
         type: String,
-        required: [true, "Gender of teammate is required"],
         enum: {
           values: ["Male", "Female", "Other", "Rather not say"],
           message: "{VALUE} is not supported",
@@ -39,21 +35,22 @@ const registrationSchema = new Schema({
   ],
 
   // Payment
-  paymentStatus: {
-    type: String,
-    required: [true, "Payment Status is required"],
-    enum: {
-      values: ["Completed", "Pending", "Failed", "Refundend"],
-      message: "{VALUE} is not supported",
+  payment: {
+    paymentStatus: {
+      type: String,
+      required: [true, "Payment Status is required"],
+      enum: {
+        values: ["Completed", "Pending", "Failed", "Refundend"],
+        message: "{VALUE} is not supported",
+      },
+      default: "Pending",
     },
-    default: "Pending",
+    paymentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Payment",
+      required: false,
+    },
   },
-  paymentId: {
-    type: Schema.Types.ObjectId,
-    ref: "Recipt",
-    required: false,
-  },
-
   // Opt Services
   eventIds: [
     {

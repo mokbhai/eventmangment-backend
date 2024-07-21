@@ -13,7 +13,6 @@ export const newRegistration = async (req, res, next) => {
     paymentStatus,
     paymentId,
     eventIds,
-    isTeam,
     team,
     optAccomodation,
   } = req.body;
@@ -22,10 +21,10 @@ export const newRegistration = async (req, res, next) => {
     validateFields(
       [
         { field: fullname, message: "Full name is required" },
-        { field: gender, message: "Gender is required" },
         { field: phoneNumber, message: "Phone number is required" },
         { field: email, message: "Email is required" },
         { field: eventIds, message: "Event ID is required" },
+        { field: team, message: "Event ID is required" },
       ],
       next
     );
@@ -39,7 +38,6 @@ export const newRegistration = async (req, res, next) => {
       paymentStatus,
       paymentId,
 
-      isTeam,
       team,
 
       eventIds,
