@@ -118,6 +118,8 @@ export const createEvent = async (req, res, next) => {
     // Save event to database
     const savedEvent = await newEvent.save();
 
+    delEventRedis({ id: "Events" });
+
     res.status(STATUSCODE.CREATED).json(savedEvent);
   } catch (error) {
     next(error);
@@ -140,14 +142,17 @@ export const filterEvents = async (req, res, next) => {
 
       const brochure = await getBrochure();
 
+      // Combine sorting by day and shift
       events.sort((a, b) => {
         // Sort by day first
         if (a.day < b.day) return -1;
         if (a.day > b.day) return 1;
 
         // If day is the same, sort by shift
-        if (a.shift < b.shift) return -1;
-        if (a.shift > b.shift) return 1;
+        if (a.day === b.day) {
+          if (a.shift === "Morning" && b.shift === "Evening") return -1;
+          if (a.shift === "Evening" && b.shift === "Morning") return 1;
+        }
 
         return 0;
       });
