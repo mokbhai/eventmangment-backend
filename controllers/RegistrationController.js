@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
 import { parse } from "json2csv";
+import { newPaymentFunc } from "./PaymentController.js";
 
 export const newRegistration = async (req, res, next) => {
   const { teamName, teamLeaderName, team, eventIds, amount } = req.body;
@@ -32,15 +33,31 @@ export const newRegistration = async (req, res, next) => {
 
     const result = await register.save();
 
-    res.status(STATUSCODE.CREATED).send({
-      success: true,
-      message: "User Registration Processed\nPayment Staus: Pending",
+    const pay = await newPaymentFunc({
+      amount,
+      paymentMethod: "UPI",
       registrationId: result._id,
-      user: {
-        fullname: teamLeaderName,
-        email: register.team[0].email,
-      },
     });
+
+    if (!pay.success) {
+      sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.message, next);
+    }
+
+    res.render("payment", {
+      registrationId: result._id,
+      amount,
+      payId: pay.payId,
+    });
+
+    // res.status(STATUSCODE.CREATED).send({
+    //   success: true,
+    //   message: "User Registration Processed\nPayment Staus: Pending",
+    //   registrationId: result._id,
+    //   user: {
+    //     fullname: teamLeaderName,
+    //     email: register.team[0].email,
+    //   },
+    // });
   } catch (error) {
     next(error);
   }

@@ -5,6 +5,7 @@ import FileRoutes from "./FileRoutes.js";
 import MailRoutes from "./MailRoutes.js";
 import OtpRoutes from "./OtpRoutes.js";
 import RegistrationRoutes from "./RegistrationRoutes.js";
+import PatmentRoutes from "./PaymentRoutes.js";
 import ContactUsRoutes from "./DataRoutes/ContactUsRoutes.js";
 import {
   aboutusRouter,
@@ -24,5 +25,6 @@ router.use("/contactUs", ContactUsRoutes);
 router.use("/aboutUs", aboutusRouter);
 router.use("/gallery", galleryRouter);
 router.use("/socialMedia", socialMediaRouter);
+router.use("/payment", PatmentRoutes);
 
 export default router;

@@ -51,6 +51,8 @@ const app = express();
 //   })
 // );
 
+// Set the view engine to EJS
+app.set("view engine", "ejs");
 app.use(xss());
 app.use(mongoSanitize());
 app.use(express.json());

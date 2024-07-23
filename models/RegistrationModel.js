@@ -25,6 +25,7 @@ const registrationSchema = new Schema({
         required: [true, "Phone number is required"],
       },
       email: { type: String },
+      class: { type: String },
       optAccomodation: { type: Boolean, default: false },
     },
   ],
