@@ -17,7 +17,7 @@ const paymentSchema = new Schema({
   paymentMethod: {
     type: String,
     enum: {
-      values: ["Credit Card", "Debit Card", "PayPal", "Bank Transfer"],
+      values: ["Credit Card", "Debit Card", "PayPal", "Bank Transfer", "UPI"],
       message: "{VALUE} is not supported",
     },
     required: [true, "Payment method is required"],

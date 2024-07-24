@@ -8,6 +8,6 @@ const router = express.Router();
 
 router.post("/success", successPayment);
 router.post("/failed", failedPayment);
-router.post("/new", createPayment);
+router.get("/new/:registrationId", createPayment);
 
 export default router;

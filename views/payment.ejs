@@ -14,34 +14,43 @@
 
     <script>
       // Payment details embedded in the page
-      const amount = <%= amount %>;
-      const id = <%= id %>;
-
+      const amount = `<%= amount %>`;
+      const registrationId = `<%= registrationId %>`;
+      const payId = `<%= payId %>`;
+      const url = "http://localhost:4000";
       // Display payment details
-      document.getElementById('payment-info').innerText = `Payment Amount: ${amount}, Payment ID: ${id}`;
+      document.getElementById(
+        "payment-info"
+      ).innerText = `Payment Amount: ${amount}, Payment ID: ${payId}`;
 
       // Handle button clicks
-      document.getElementById('success-btn').addEventListener('click', () => {
-          fetch('/payment-success', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ amount, id })
-          }).then(response => response.json())
-            .then(data => alert(data.message));
-      });
+      document
+        .getElementById("success-btn")
+        .addEventListener("click", async () => {
+          await fetch(url + "/api/payment/success", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount, paymentId: payId }),
+          })
+            .then((response) => console.log(response))
+            .then((data) => alert(data.message));
+        });
 
-      document.getElementById('failed-btn').addEventListener('click', () => {
-          fetch('/payment-failed', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ amount, id })
-          }).then(response => response.json())
-            .then(data => alert(data.message));
-      });
+      document
+        .getElementById("failed-btn")
+        .addEventListener("click", async () => {
+          await fetch(url + "/api/payment/failed", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount, paymentId: payId }),
+          })
+            .then((response) => response.json())
+            .then((data) => alert(data.message));
+        });
     </script>
   </body>
 </html>

@@ -30,6 +30,8 @@ const registrationSchema = new Schema({
     },
   ],
 
+  amount: { type: Number, required: [true, "Amount is required"] },
+
   // Payment
   payment: {
     paymentStatus: {

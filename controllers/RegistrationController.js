@@ -31,17 +31,19 @@ export const newRegistration = async (req, res, next) => {
       eventIds,
     });
 
-    const result = await register.save();
-
     const pay = await newPaymentFunc({
       amount,
       paymentMethod: "UPI",
-      registrationId: result._id,
+      registrationId: register._id,
     });
 
-    if (!pay.success) {
-      sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.message, next);
+    if (!pay || !pay.success) {
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.error, next);
     }
+
+    register.payment = { paymentStatus: "Pending", paymentId: pay.payId };
+
+    const result = await register.save();
 
     res.render("payment", {
       registrationId: result._id,

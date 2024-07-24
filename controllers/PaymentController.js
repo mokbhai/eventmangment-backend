@@ -10,11 +10,10 @@ export const newPaymentFunc = async ({
   registrationId,
 }) => {
   try {
-    const payment = paymentMethod.create({
+    const payment = await paymentModel.create({
       paymentMethod,
       amount,
       paymentStatus: "Pending",
-      paymentMethod,
       registrationId,
     });
 
@@ -48,12 +47,10 @@ export const changePaymentStatus = async ({ paymentId, paymentStatus }) => {
 
     const data = await registrationModel.findById(result.registrationId);
 
-    if (paymentStatus == "Completed") {
-      const payment = { paymentStatus, paymentId };
+    const payment = { paymentStatus, paymentId };
 
-      data.payment = payment;
-      await data.save();
-    }
+    data.payment = payment;
+    await data.save();
 
     return {
       success: true,
@@ -92,20 +89,55 @@ export const failedPayment = async (req, res) => {
 export const createPayment = async (req, res, next) => {
   const { registrationId } = req.params;
   try {
-    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
-      return sendError(STATUSCODE.BAD_REQUEST, "Payment id is not valid", next);
+    if (!mongoose.Types.ObjectId.isValid(registrationId)) {
+      return sendError(
+        STATUSCODE.BAD_REQUEST,
+        "Registration id is not valid",
+        next
+      );
     }
+
     const data = await registrationModel.findById(registrationId);
 
-    const pay = await newPaymentFunc({
-      paymentMethod: "UPI",
-      amount: data.amount,
-      registrationId,
-    });
+    if (!data) {
+      return sendError(
+        STATUSCODE.INTERNAL_SERVER_ERROR,
+        "Registration not found",
+        next
+      );
+    }
 
-    return res
-      .status(STATUSCODE.CREATED)
-      .send({ success: true, message: "New payment created. Please Pay now." });
+    let pay = await paymentModel.findById(data.payment.paymentId);
+
+    if (pay && pay.paymentStatus == "Completed") {
+      return res.status(STATUSCODE.OK).send("<h2>You have already paid</h2>");
+    } else if (pay && pay.paymentStatus == "Refunded") {
+      return res
+        .status(STATUSCODE.OK)
+        .send("<h2>Your Payment is refunded</h2>");
+    } else if (!pay || pay.paymentStatus != "Failed") {
+      pay = await newPaymentFunc({
+        paymentMethod: "UPI",
+        amount: data.amount,
+        registrationId,
+      });
+
+      if (!pay.success) {
+        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.error, next);
+      }
+
+      data.payment = { paymentStatus: "Pending", paymentId: pay.payId };
+      await data.save();
+    }
+
+    res.render("payment", {
+      registrationId,
+      amount: data.amount,
+      payId: data.payment.paymentId,
+    });
+    // return res
+    //   .status(STATUSCODE.CREATED)
+    //   .send({ success: true, message: "New payment created. Please Pay now." });
   } catch (error) {
     next(error);
   }
