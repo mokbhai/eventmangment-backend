@@ -1,6 +1,7 @@
 import multer from "multer";
+import path from "path";
 import File from "../models/FilesModel.js";
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 import fs from "fs";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError } from "./ErrorHandler.js";
@@ -11,24 +12,36 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../ENV.js";
+import { error } from "console";
 
-// Cloudinary configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = "./uploads";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const extension = file.originalname.split(".").pop();
+    const uniqueSuffix = Date.now() + "." + extension;
+    cb(null, uniqueSuffix);
+  },
+});
+
+const upload = multer({ storage }).single("upload");
+
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
 });
 
-// Use memory storage for Multer
-const storage = multer.memoryStorage();
-const upload = multer({ storage }).single("upload");
-
-// Function to delete images from Cloudinary
 export const deleteImgsFromCloudinary = (publicId) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(
       publicId,
-      { resource_type: "raw" }, // Assuming you're uploading raw files
+      { resource_type: "raw" },
       (error, result) => {
         if (error) {
           reject(error);
@@ -40,29 +53,28 @@ export const deleteImgsFromCloudinary = (publicId) => {
   });
 };
 
-// Function to upload files to Cloudinary
-const uploadToCloudinary = async (buffer, id, mimetype) => {
-  const options = {
-    resource_type: 'auto',
-    public_id: id,
-  };
+const uploadToCloudinary = async (fileLoaction, id) => {
+  // Upload an image
+  const uploadResult = await cloudinary.uploader
+    .upload(fileLoaction, {
+      public_id: id,
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 
-  // Additional options for images
-  if (mimetype.startsWith('image/')) {
-    options.fetch_format = 'auto';
-    options.quality = 'auto';
-  }
+  // console.log(uploadResult);
 
-  try {
-    const uploadResult = await cloudinary.uploader.upload(buffer, options);
-    return uploadResult.secure_url;
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    throw error; // Re-throw to handle in the calling function
-  }
+  // Optimize delivery by resizing and applying auto-format and auto-quality
+  const optimizeUrl = cloudinary.url(id, {
+    fetch_format: "auto",
+    quality: "auto",
+  });
+
+  // console.log(optimizeUrl);
+  return optimizeUrl;
 };
 
-// Function to upload files 
 export const uploadFile = async (req, res, next) => {
   const { userId } = req.user;
 
@@ -73,51 +85,64 @@ export const uploadFile = async (req, res, next) => {
       return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
     }
 
+    // Update the file data in MongoDB
     if (!req.file) {
       return sendError(STATUSCODE.BAD_REQUEST, "Didn't get File", next);
     }
 
-    const { originalname, mimetype, buffer } = req.file;
+    const { filename, mimetype, path } = req.file;
     const { type } = req.body;
 
-    try {
-      // Upload to Cloudinary
-      const cloudinaryUrl = await uploadToCloudinary(
-        buffer,
-        new mongoose.Types.ObjectId(), // Generate a new ID for Cloudinary
-        mimetype
-      );
+    const fileData = new File();
 
-      const fileData = new File({
-        name: originalname,
-        type: mimetype,
-        file: cloudinaryUrl, 
-        uplodedBy: userId,
-        used: type,
-      });
+    fileData.name = filename;
+    fileData.type = mimetype;
+    fileData.file = path;
+    fileData.uplodedBy = userId;
+    fileData.used = type;
+    fileData._id = new mongoose.Types.ObjectId();
 
-      if (type === "Gallery") redisClient.del("Gallery:Gallery");
-      if (type === "AboutUs") redisClient.del("AboutUs:AboutUs");
+    // If the file is an image
+    if (mimetype.startsWith("image/")) {
+      // const image = path;
+      // console.log(image);
 
-      await fileData.save()
-        .then((result) => {
-          redisClient.set(`file:${result._id.toString()}`, JSON.stringify(result));
-          res.status(200).json({
-            message: "File uploaded successfully",
-            file: result,
-            fileId: result._id,
-          });
-        })
-        .catch((err) => {
-          return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-        });
+      // const webpImage = await imageToWebp(image, 40);
+      // console.log(webpImage);
 
-    } catch (err) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+      // fs.copyFileSync(webpImage, image + ".webp");
+      // fs.unlinkSync(image);
+
+      // fileData.name = filename + ".webp";
+      // fileData.type = "image/webp";
+      // fileData.file = path + ".webp";
+
+      fileData.file = await uploadToCloudinary(fileData.file, fileData._id);
+      fs.unlinkSync(path);
     }
+
+    if (type == "Gallery") redisClient.del("Gallery:Gallery");
+    if (type == "AboutUs") redisClient.del("AboutUs:AboutUs");
+
+    await fileData
+      .save()
+      .then((result) => {
+        // Store data in cache for future use
+        redisClient.set(
+          "file:" + result._id.toString(),
+          JSON.stringify(result)
+        ); // Set expiry to 10 minutes
+        res.status(200).json({
+          message: "File uploaded successfully",
+          file: result,
+          fileId: result._id,
+        });
+      })
+      .catch((err) => {
+        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+      });
   });
 };
-
 
 export const changeFile = async (req, res, next) => {
   const { userId } = req.user;
