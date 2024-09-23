@@ -198,6 +198,8 @@ export const getEventById = async (req, res, next) => {
           return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
         }
 
+        const brochure = await getBrochure();
+
         dbEvent = {
           ...dbEvent._doc,
           brochure,
