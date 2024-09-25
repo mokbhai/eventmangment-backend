@@ -68,7 +68,7 @@ export const uploadFile = async (req, res, next) => {
           return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
         }
 
-        if (result && result.url) {
+        if (result && result.url) {          
           try {
             // Save the Cloudinary URL to your database
             fileData.file = result.url;
@@ -263,17 +263,8 @@ export const deleteFileFunction = async (fileId) => {
 
     const file = await File.findByIdAndDelete(fileId);
 
-    if (file.type.startsWith("image/")) deleteImgsFromCloudinary(fileId);
-    else {
-      try {
-        fs.unlinkSync(file.file);
-      } catch (error) {
-        return {
-          success: false,
-          message: "File Deleted failed as file not found\n" + error,
-        };
-      }
-    }
+    deleteImgsFromCloudinary(fileId);
+
     if (file.used === "Gallery") redisClient.del("Gallery:Gallery");
     if (file.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
 
@@ -294,7 +285,7 @@ export const deleteTempFiles = async (req, res) => {
       fs.unlinkSync(file.file);
     } catch (error) {}
 
-    if (file.type.startsWith("image/")) deleteImgsFromCloudinary(file._id);
+    deleteImgsFromCloudinary(file._id);
 
     // Delete file reference from MongoDB
     await File.deleteOne({ _id: file._id });
