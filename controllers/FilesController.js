@@ -55,7 +55,7 @@ export const deleteImgsFromCloudinary = (publicId) => {
 
 const uploadToCloudinary = async (fileLoaction, id) => {
   // Upload an image
-  const uploadResult = await cloudinary.uploader
+  await cloudinary.uploader
     .upload(fileLoaction, {
       public_id: id,
     })
