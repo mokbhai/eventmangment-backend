@@ -1,7 +1,7 @@
-import multer from "multer";
+import Busboy from "busboy";
 import path from "path";
 import File from "../models/FilesModel.js";
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 import fs from "fs";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError } from "./ErrorHandler.js";
@@ -12,25 +12,8 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../ENV.js";
-import { error } from "console";
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = "./uploads";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const extension = file.originalname.split(".").pop();
-    const uniqueSuffix = Date.now() + "." + extension;
-    cb(null, uniqueSuffix);
-  },
-});
-
-const upload = multer({ storage }).single("upload");
-
+// Cloudinary configuration
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
@@ -53,95 +36,88 @@ export const deleteImgsFromCloudinary = (publicId) => {
   });
 };
 
-const uploadToCloudinary = async (fileLoaction, id) => {
-  // Upload an image
-  await cloudinary.uploader
-    .upload(fileLoaction, {
-      public_id: id,
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-
-  // console.log(uploadResult);
-
-  // Optimize delivery by resizing and applying auto-format and auto-quality
-  const optimizeUrl = cloudinary.url(id, {
-    fetch_format: "auto",
-    quality: "auto",
-  });
-
-  // console.log(optimizeUrl);
-  return optimizeUrl;
-};
-
 export const uploadFile = async (req, res, next) => {
   const { userId } = req.user;
 
-  upload(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    } else if (err) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    }
+  const busboy = Busboy({ headers: req.headers });
 
-    // Update the file data in MongoDB
-    if (!req.file) {
-      return sendError(STATUSCODE.BAD_REQUEST, "Didn't get File", next);
-    }
+  let fileData = new File();
 
-    const { filename, mimetype, path } = req.file;
-    const { type } = req.body;
+  busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+    // Generate a unique filename (optional, but recommended)
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const extension = path.extname(filename.filename.toString());
+    const newFilename = uniqueSuffix + extension;
 
-    const fileData = new File();
-
-    fileData.name = filename;
-    fileData.type = mimetype;
-    fileData.file = path;
+    // Populate fileData
+    fileData.name = newFilename;
+    fileData.type = filename.mimeType;
     fileData.uplodedBy = userId;
-    fileData.used = type;
     fileData._id = new mongoose.Types.ObjectId();
 
-    // If the file is an image
-    if (mimetype.startsWith("image/")) {
-      // const image = path;
-      // console.log(image);
+    // Create a Cloudinary upload stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        // ... (Your Cloudinary upload options, e.g., folder, resource_type)
+        folder:"/TechSprint",
+        public_id: fileData._id.toString(), // Use the MongoDB _id as public_id
+      },
+      async (error, result) => {
+        if (error) {
+          console.error("Error uploading to Cloudinary:", error);
+          return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
+        }
 
-      // const webpImage = await imageToWebp(image, 40);
-      // console.log(webpImage);
+        if (result && result.url) {
+          try {
+            // Save the Cloudinary URL to your database
+            fileData.file = result.url;
 
-      // fs.copyFileSync(webpImage, image + ".webp");
-      // fs.unlinkSync(image);
+            console.log(fileData);
 
-      // fileData.name = filename + ".webp";
-      // fileData.type = "image/webp";
-      // fileData.file = path + ".webp";
+            const savedFile = await fileData.save();
 
-      fileData.file = await uploadToCloudinary(fileData.file, fileData._id);
-      fs.unlinkSync(path);
-    }
+            // Cache the result
+            redisClient.set(
+              "file:" + savedFile._id.toString(),
+              JSON.stringify(savedFile)
+            );
 
-    if (type == "Gallery") redisClient.del("Gallery:Gallery");
-    if (type == "AboutUs") redisClient.del("AboutUs:AboutUs");
+            res.status(200).json({
+              message: "File uploaded successfully",
+              file: savedFile,
+              fileId: savedFile._id,
+            });
+          } catch (dbError) {
+            console.error("Error saving file data to database:", dbError);
+            return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, dbError, next);
+          }
+        } else {
+          console.error("Unexpected Cloudinary upload result:", result);
+          return sendError(
+            STATUSCODE.INTERNAL_SERVER_ERROR,
+            "File upload failed",
+            next
+          );
+        }
+      }
+    );
 
-    await fileData
-      .save()
-      .then((result) => {
-        // Store data in cache for future use
-        redisClient.set(
-          "file:" + result._id.toString(),
-          JSON.stringify(result)
-        ); // Set expiry to 10 minutes
-        res.status(200).json({
-          message: "File uploaded successfully",
-          file: result,
-          fileId: result._id,
-        });
-      })
-      .catch((err) => {
-        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-      });
+    // Pipe the incoming file stream to the Cloudinary upload stream
+    file.pipe(uploadStream);
   });
+
+  busboy.on("field", (fieldname, val) => {
+    // ... (Handle other form fields like 'type')
+  });
+
+  // Handle potential errors with Busboy parsing
+  busboy.on("error", (err) => {
+    console.error("Busboy parsing error:", err);
+    return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+  });
+
+  req.pipe(busboy);
 };
 
 export const changeFile = async (req, res, next) => {
