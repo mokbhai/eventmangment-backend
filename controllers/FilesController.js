@@ -43,6 +43,16 @@ export const uploadFile = async (req, res, next) => {
 
   let fileData = new File();
 
+  busboy.on("field", (fieldname, val) => {
+    // ... (Handle other form fields like 'type')
+    if (fieldname === "type") {
+      fileData.used = val;
+
+      if (fileData.used === "Gallery") redisClient.del("Gallery:Gallery");
+      if (fileData.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
+    }
+  });
+
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
     // Generate a unique filename (optional, but recommended)
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -59,7 +69,7 @@ export const uploadFile = async (req, res, next) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         // ... (Your Cloudinary upload options, e.g., folder, resource_type)
-        folder:"/TechSprint",
+        folder: "/TechSprint",
         public_id: fileData._id.toString(), // Use the MongoDB _id as public_id
       },
       async (error, result) => {
@@ -68,12 +78,10 @@ export const uploadFile = async (req, res, next) => {
           return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
         }
 
-        if (result && result.url) {          
+        if (result && result.url) {
           try {
             // Save the Cloudinary URL to your database
             fileData.file = result.url;
-
-            console.log(fileData);
 
             const savedFile = await fileData.save();
 
@@ -105,10 +113,6 @@ export const uploadFile = async (req, res, next) => {
 
     // Pipe the incoming file stream to the Cloudinary upload stream
     file.pipe(uploadStream);
-  });
-
-  busboy.on("field", (fieldname, val) => {
-    // ... (Handle other form fields like 'type')
   });
 
   // Handle potential errors with Busboy parsing

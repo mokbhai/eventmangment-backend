@@ -71,11 +71,13 @@ const getAboutUs = async (req, res, next) => {
 
       const title = await redisClient.get("AboutUs:Title");
       const description = await redisClient.get("AboutUs:Description");
+      const videos = ["6qyu9fVyees", "mSy5KJOjISs"];
 
       const data = {
         photos,
         title,
         description,
+        videos,
       };
 
       redisClient.set("AboutUs:AboutUs", JSON.stringify(data));
