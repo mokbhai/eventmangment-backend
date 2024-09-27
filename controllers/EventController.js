@@ -29,6 +29,7 @@ export const createEvent = async (req, res, next) => {
       contacts,
       registrationCharge,
       photos,
+      avengerCharacter,
     } = req.body;
     const uploadedBy = req.user.userId;
 
@@ -42,6 +43,7 @@ export const createEvent = async (req, res, next) => {
         { field: description, message: "Description is required" },
         { field: photos, message: "Photos is required" },
         { field: organiserName, message: "Organiser name is required" },
+        { field: avengerCharacter, message: "Organiser name is required" },
         { field: structure, message: "Structure is required" },
         {
           field: location && location.landmark,
@@ -101,6 +103,7 @@ export const createEvent = async (req, res, next) => {
       registrationCharge,
       photos,
       uploadedBy,
+      avengerCharacter,
     });
 
     // Check if event model creation failed
@@ -114,6 +117,7 @@ export const createEvent = async (req, res, next) => {
 
     await updateFileTill(photos, "EventPhotos");
     await updateFileTill([ruleBook], "RuleBook");
+    await updateFileTill([avengerCharacter], "EventPhotos");
 
     // Save event to database
     const savedEvent = await newEvent.save();
@@ -127,51 +131,86 @@ export const createEvent = async (req, res, next) => {
 };
 
 export const filterEvents = async (req, res, next) => {
-  redisClient.get("Event:Events", async (err, redisEvents) => {
-    if (redisEvents) {
-      return res.status(STATUSCODE.OK).json({
-        success: true,
-        events: JSON.parse(redisEvents),
+  // redisClient.get("Event:Events", async (err, redisEvents) => {
+  //   if (redisEvents) {
+  //     return res.status(STATUSCODE.OK).json({
+  //       success: true,
+  //       events: JSON.parse(redisEvents),
+  //     });
+  //   }
+  // });
+
+  try {
+    // Construct filter object
+    let filter = { isDeleted: { $ne: true } };
+
+    const events = await EventModel.find(filter);
+
+    const brochure = await getBrochure();
+
+    // Combine sorting by day and shift
+    events.sort((a, b) => {
+      // Sort by day first
+      if (a.day < b.day) return -1;
+      if (a.day > b.day) return 1;
+
+      // If day is the same, sort by shift
+      if (a.day === b.day) {
+        if (a.shift === "Morning" && b.shift === "Evening") return -1;
+        if (a.shift === "Evening" && b.shift === "Morning") return 1;
+      }
+
+      return 0;
+    });
+
+    const eventsWithBrochure = events.map((event) => ({
+      ...event._doc,
+      brochure,
+    }));
+
+    setEventRedis({ eventId: "Events", data: eventsWithBrochure });
+
+    return res.status(STATUSCODE.OK).json({
+      success: true,
+      events: eventsWithBrochure,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEvent = async (req, res, next) => {
+  const { id } = req.params;
+  const eventData = req.body;
+
+  try {
+    const prevEvent = await EventModel.findById(id);
+
+    if (!prevEvent) {
+      return res.status(STATUSCODE.NOT_FOUND).json({
+        success: false,
+        message: "Event not found",
       });
     }
-    try {
-      // Construct filter object
-      let filter = { isDeleted: { $ne: true } };
 
-      const events = await EventModel.find(filter);
-
-      const brochure = await getBrochure();
-
-      // Combine sorting by day and shift
-      events.sort((a, b) => {
-        // Sort by day first
-        if (a.day < b.day) return -1;
-        if (a.day > b.day) return 1;
-
-        // If day is the same, sort by shift
-        if (a.day === b.day) {
-          if (a.shift === "Morning" && b.shift === "Evening") return -1;
-          if (a.shift === "Evening" && b.shift === "Morning") return 1;
-        }
-
-        return 0;
-      });
-
-      const eventsWithBrochure = events.map((event) => ({
-        ...event._doc,
-        brochure,
-      }));
-
-      setEventRedis({ eventId: "Events", data: eventsWithBrochure });
-
-      return res.status(STATUSCODE.OK).json({
-        success: true,
-        events: eventsWithBrochure,
-      });
-    } catch (error) {
-      next(error);
+    // Update the fields of prevEvent with the new data
+    for (const key in eventData) {
+      if (eventData.hasOwnProperty(key)) {
+        prevEvent[key] = eventData[key];
+      }
     }
-  });
+
+    await prevEvent.save();
+
+    delEventRedis({ id: "Events" }); // Consider using a more specific key
+
+    return res.status(STATUSCODE.OK).json({
+      success: true,
+      event: prevEvent, // Changed 'events' to 'event' for consistency
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getEventById = async (req, res, next) => {

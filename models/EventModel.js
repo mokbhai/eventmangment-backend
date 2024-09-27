@@ -10,6 +10,7 @@ const eventSchema = new Schema(
     photos: [
       {
         type: mongoose.Schema.Types.ObjectId,
+        ref: "File",
         required: [true, "Photos is required"],
       },
     ],
@@ -41,6 +42,11 @@ const eventSchema = new Schema(
       { type: String, required: [true, "eligibilities are required"] },
     ],
     rules: [{ type: String, required: [true, "Rules are required"] }],
+    avengerCharacter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+      required: [true, "Rules are required"],
+    },
     ruleBook: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "File",
