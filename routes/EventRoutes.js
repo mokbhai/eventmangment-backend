@@ -29,9 +29,9 @@ router.post("/create", userAuth, createEvent);
 router.post("/:id", userAuth, updateEvent);
 
 router.get("/filter", filterEvents);
+router.get("/accommodationPrice", accommodationPrice);
 router.get("/:eventId", getEventById);
 
-router.get("/accommodationPrice", accommodationPrice);
 router.delete("/brochure", userAuth, deleteBrochure);
 router.delete("/:eventId", userAuth, deleteEvent);
 
