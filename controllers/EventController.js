@@ -28,9 +28,10 @@ export const createEvent = async (req, res, next) => {
       ruleBook,
       contacts,
       registrationCharge,
-      photos,
       avengerCharacter,
+      category,
     } = req.body;
+    let { photos } = req.body;
     const uploadedBy = req.user.userId;
 
     // Validate required fields using helper function
@@ -74,6 +75,7 @@ export const createEvent = async (req, res, next) => {
           field: registrationCharge,
           message: "Registration charges are required",
         },
+        { field: category, message: "category information is required" },
         { field: uploadedBy, message: "Uploader information is required" },
       ],
       next
@@ -84,10 +86,16 @@ export const createEvent = async (req, res, next) => {
       return sendError(STATUSCODE.BAD_REQUEST, "Rulebook is not valid", next);
     }
 
+    // Validate and format photos
+    if (!Array.isArray(photos)) {
+      photos = [photos]; // Wrap in an array if not already an array
+    }
+
     // Create new event
     const newEvent = new EventModel({
       eventName,
       eventType,
+      category,
       description,
       organiserName,
       location,

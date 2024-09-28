@@ -214,11 +214,14 @@ export const viewFile = async (req, res, next) => {
         if (!file || file === null || file === undefined || !file.file)
           return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
 
-        if (file.type.startsWith("image/")) {
-          return res.redirect(file.file);
-        }
         // Redirect to the file path
-        res.redirect(`/${file.file}?length=${file.length}&width=${file.width}`);
+        if (file.type.startsWith("/")) {
+          return res.redirect(
+            `/${file.file}?length=${file.length}&width=${file.width}`
+          );
+        }
+
+        return res.redirect(file.file);
       } else {
         // If data is not in cache, fetch it from the database
         const file = await File.findById(fileId);

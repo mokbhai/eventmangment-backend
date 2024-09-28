@@ -6,13 +6,13 @@ import { parse } from "json2csv";
 import { newPaymentFunc } from "./PaymentController.js";
 
 export const newRegistration = async (req, res, next) => {
-  const { teamName, teamLeaderName, team, eventIds, amount } = req.body;
+  const { teamName, team, eventIds, amount } = req.body;
+  const data = { teamName, team, eventIds, amount };
 
   try {
     validateFields(
       [
         { field: teamName, message: "Team name is required" },
-        { field: teamLeaderName, message: "Team Leader Name is required" },
         { field: eventIds, message: "Event ID is required" },
         { field: team, message: "Team Member details are required" },
         { field: amount, message: "Amount is required" },
@@ -20,46 +20,39 @@ export const newRegistration = async (req, res, next) => {
       next
     );
 
-    const register = await registrationModel.create({
-      teamName,
-      teamLeaderName,
-
-      team,
-
-      amount,
-
-      eventIds,
-    });
-
-    const pay = await newPaymentFunc({
-      amount,
-      paymentMethod: "UPI",
-      registrationId: register._id,
-    });
-
-    if (!pay || !pay.success) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.error, next);
-    }
-
-    register.payment = { paymentStatus: "Pending", paymentId: pay.payId };
-
-    const result = await register.save();
-
-    res.render("payment", {
-      registrationId: result._id,
-      amount,
-      payId: pay.payId,
-    });
-
-    // res.status(STATUSCODE.CREATED).send({
-    //   success: true,
-    //   message: "User Registration Processed\nPayment Staus: Pending",
-    //   registrationId: result._id,
-    //   user: {
-    //     fullname: teamLeaderName,
-    //     email: register.team[0].email,
-    //   },
+    // const register = await registrationModel.create({
+    //   teamName,
+    //   team,
+    //   amount,
+    //   eventIds,
     // });
+
+    // const pay = await newPaymentFunc({
+    //   amount,
+    //   paymentMethod: "UPI",
+    //   registrationId: register._id,
+    // });
+
+    // if (!pay || !pay.success) {
+    //   return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, pay.error, next);
+    // }
+
+    // register.payment = { paymentStatus: "Pending", paymentId: pay.payId };
+
+    // const result = await register.save();
+
+    // res.render("payment", {
+    //   registrationId: result._id,
+    //   amount,
+    //   payId: pay.payId,
+    // });
+
+    return res.status(STATUSCODE.CREATED).send({
+      success: true,
+      message: "User Registration Processed\nPayment Staus: Pending",
+      // registrationId: result._id,
+      data,
+    });
   } catch (error) {
     next(error);
   }

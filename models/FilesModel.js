@@ -28,6 +28,7 @@ const FileSchema = new Schema(
           "ContactUs",
           "AboutUs",
           "Brochure",
+          "AvengerCharacter",
         ],
         message: "{VALUE} is not supported as a valid relation",
       },
