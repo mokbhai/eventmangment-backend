@@ -677,10 +677,11 @@ export const accommodationPrice = async (req, res, next) => {
   await redisClient.get("Accommodation:Price", async (err, result) => {
     if (result) {
       // send data
-      res.status(STATUSCODE.OK).send({ success: true, price: result });
+      res.status(STATUSCODE.OK).send({ success: true, price: Number(result) });
     } else {
       // If data is not in cache, fetch it from the database
-      const price = req.body.price;
+      // const price = req.body.price;
+      const price = 100;
       // Store data in cache for future use
       if (!price)
         return sendError(STATUSCODE.BAD_GATEWAY, "Price not found", next);
@@ -688,7 +689,7 @@ export const accommodationPrice = async (req, res, next) => {
       redisClient.set("Accommodation:Price", price);
 
       // Redirect to the file path
-      res.status(STATUSCODE.OK).send({ success: true, price });
+      res.status(STATUSCODE.OK).send({ success: true, price: Number(price) });
     }
   });
 };
