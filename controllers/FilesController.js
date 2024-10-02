@@ -215,7 +215,7 @@ export const viewFile = async (req, res, next) => {
           return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
 
         // Redirect to the file path
-        if (file.type.startsWith("/")) {
+        if (file.file.startsWith("uploads/")) {
           return res.redirect(
             `/${file.file}?length=${file.length}&width=${file.width}`
           );

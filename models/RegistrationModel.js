@@ -3,10 +3,7 @@ import { Schema, model } from "mongoose";
 const registrationSchema = new Schema({
   // Self
   teamName: { type: String, required: [true, "Team Name is required"] },
-  teamLeaderName: {
-    type: String,
-    required: [true, "Fullname of Team Leader is required"],
-  },
+  teamId: {type: String},
   team: [
     {
       fullname: {
@@ -56,6 +53,7 @@ const registrationSchema = new Schema({
       required: [true, "Event IDs is required"],
     },
   ],
+
   isDeleted: { type: Boolean, default: false },
 });
 
