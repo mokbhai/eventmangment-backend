@@ -223,3 +223,27 @@ export const downloadRegistrations = async (req, res, next) => {
     next(error);
   }
 };
+
+export const callbackRegistration = async (req, res) => {
+  const { registrationId, paymentStatus, paymentId } = req.body;
+
+  try {
+    // Find the registration by ID and update the payment status
+    const registration = await RegistrationModel.findById(registrationId);
+    if (!registration) {
+      return res.status(404).json({ message: "Registration not found" });
+    }
+
+    // Update the payment status
+    registration.payment.paymentStatus = paymentStatus;
+    registration.payment.paymentId = paymentId;
+    await registration.save();
+
+    return res
+      .status(200)
+      .json({ message: "Payment status updated successfully" });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
