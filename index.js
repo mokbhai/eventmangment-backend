@@ -52,8 +52,9 @@ const app = express();
 // );
 
 const allowedOrigins = [
-  "http://localhost:3000",
+  // "http://localhost:3000",
   "https://techsprint.vercel.app",
+  "https://techsprint2.vercel.app",
 ];
 
 app.use(
