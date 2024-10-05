@@ -78,6 +78,64 @@ export const createOtp = async (req, res, next) => {
   }
 };
 
+export const createOtpFunc = async (mailId, otpType) => {
+  try {
+    const now = new Date();
+    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+
+    const recentOtp = await otpModel.findOne({
+      mailId,
+      createdAt: { $gte: oneMinuteAgo },
+    });
+
+    if (recentOtp) {
+      return {
+        status: false,
+        statusCode: STATUSCODE.TOO_MANY_REQUESTS,
+        message:
+          "You can only request an OTP once per minute. Please try again later.",
+      };
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000);
+
+    const result = await otpModel.create({
+      otp,
+      mailId,
+      type: otpType,
+    });
+
+    //#region Sending Mail
+
+    const mailOptions = createMailOptions({
+      to: mailId,
+      subject: "OTP for " + otpType,
+      html: generateOtpEmailHtml(otp, otpType),
+    });
+
+    await sendMail(mailOptions);
+
+    //#endregion
+
+    // Assuming your otpModel schema has a method to create a JWT
+    const token = result.createJWT();
+    // res.status(STATUSCODE.CREATED).send({
+    //   success: true,
+    //   message: "OTP sent to email",
+    //   mail: mailId,
+    //   token,
+    // });
+    return {
+      status: true,
+      message: "OTP sent to email",
+      email: mailId,
+      token,
+    };
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 export const verifyOtp = async (req, res, next) => {
   const { otp } = req.body;
   const { otpId } = req.user;
@@ -90,11 +148,28 @@ export const verifyOtp = async (req, res, next) => {
     if (!isMatch) {
       return sendError(STATUSCODE.BAD_REQUEST, "Invalid OTP", next);
     }
-    res.status(STATUSCODE.OK).json({
-      success: true,
-      message: "OTP verified",
-    });
+
+    return res.status(200).json({ status: true, message: "Otp Verified" });
   } catch (error) {
     next(error);
+  }
+};
+
+export const verifyOtpFunc = async (otp, otpId) => {
+  try {
+    const Otp = await otpModel.findById(otpId);
+    const isMatch = await Otp.compareotp(otp);
+    if (!isMatch) {
+      return {
+        status: false,
+        message: "Incorrect Otp",
+      };
+    }
+    return {
+      status: true,
+      email: Otp.mailId,
+    };
+  } catch (error) {
+    throw new Error(error);
   }
 };

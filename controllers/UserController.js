@@ -2,6 +2,7 @@ import userModel from "../models/UserModel.js";
 import mongoose from "mongoose";
 import STATUSCODE from "../Enums/HttpStatusCodes.js";
 import { sendError, validateFields } from "./ErrorHandler.js";
+import { createOtpFunc, verifyOtpFunc } from "./OtpController.js";
 
 export const signup = async (req, res, next) => {
   const { fullname, email, password } = req.body;
@@ -82,14 +83,34 @@ export const login = async (req, res, next) => {
       );
     }
 
-    user.password = undefined;
-    const token = user.createJWT();
+    const data = await createOtpFunc(email, "EMAIL_VERIFICATION");
 
-    res.status(STATUSCODE.OK).json({
-      success: true,
-      message: "Login Successfully",
-      user,
-      token,
+    res.status(STATUSCODE.OK).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyLoginOtp = async (req, res, next) => {
+  const { otp } = req.body;
+  const { otpId } = req.user;
+
+  try {
+    const { status, email } = await verifyOtpFunc(otp, otpId);
+    if (status) {
+      const user = await userModel.findOne({ email });
+
+      user.password = undefined;
+      const token = user.createJWT();
+
+      return res.status(STATUSCODE.OK).json({
+        status: true,
+        user,
+        token,
+      });
+    }
+    return res.status(STATUSCODE.OK).json({
+      status: false,
     });
   } catch (error) {
     next(error);
