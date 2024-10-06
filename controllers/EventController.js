@@ -45,7 +45,6 @@ export const createEvent = async (req, res, next) => {
         { field: photos, message: "Photos is required" },
         { field: organiserName, message: "Organiser name is required" },
         { field: avengerCharacter, message: "Organiser name is required" },
-        { field: structure, message: "Structure is required" },
         {
           field: location && location.landmark,
           message: "Location landmark is required",

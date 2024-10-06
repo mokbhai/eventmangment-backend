@@ -45,7 +45,7 @@ const eventSchema = new Schema(
         message: "{VALUE} is not supported as a valid relation",
       },
     },
-    structure: [{ type: String, required: [true, "Structure are required"] }],
+    structure: [{ type: String }],
     eligibilities: [
       { type: String, required: [true, "eligibilities are required"] },
     ],
