@@ -50,6 +50,10 @@ export const uploadFile = async (req, res, next) => {
 
       if (fileData.used === "Gallery") redisClient.del("Gallery:Gallery");
       if (fileData.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
+      if (fileData.used === "Brochure") {
+        redisClient.del("Event:Brochure");
+      fileData.till = "Permanent";
+      }
     }
   });
 
