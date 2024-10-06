@@ -65,19 +65,25 @@ export const uploadFile = async (req, res, next) => {
     fileData.uplodedBy = userId;
     fileData._id = new mongoose.Types.ObjectId();
 
-    // Create a Cloudinary upload stream
+    const isImage = filename.mimeType.startsWith("image/");
+
+    const cloudinaryOptions = {
+      folder: "/TechSprint",
+      public_id: fileData._id.toString(),
+    };
+
+    if (isImage) {
+      cloudinaryOptions.format = "webp";
+      cloudinaryOptions.quality = "auto:good";
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        // ... (Your Cloudinary upload options, e.g., folder, resource_type)
-        folder: "/TechSprint",
-        public_id: fileData._id.toString(), // Use the MongoDB _id as public_id
-      },
+      cloudinaryOptions,
       async (error, result) => {
         if (error) {
           console.error("Error uploading to Cloudinary:", error);
           return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
         }
-
         if (result && result.url) {
           try {
             // Save the Cloudinary URL to your database
