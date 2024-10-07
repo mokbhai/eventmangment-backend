@@ -15,9 +15,7 @@ const createContactUs = async (req, res, next) => {
       [
         { field: fullname, message: "Full name is required" },
         { field: phone, message: "Phone number is required" },
-        { field: email, message: "Email Id is required" },
         { field: designation, message: "Designation is required" },
-        { field: photo, message: "Photo Id is required" },
       ],
       next
     );
@@ -28,7 +26,10 @@ const createContactUs = async (req, res, next) => {
       designation,
       photo,
     });
-    await updateFileTill([photo], "ContactUs");
+    if (photo) {
+      await updateFileTill([photo], "ContactUs");
+    }
+
     const savedContactUs = await newContactUs.save();
     redisClient.del("ContactUs");
     return res.status(STATUSCODE.CREATED).json(savedContactUs);

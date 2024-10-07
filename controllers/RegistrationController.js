@@ -132,11 +132,11 @@ export const filterRegistrations = async (req, res, next) => {
         path: "eventIds",
         select: "eventName",
       })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitInt);
 
     res.status(STATUSCODE.OK).json({
-      // Use json() instead of send() for better consistency
       success: true,
       message: "Filtered registrations retrieved successfully",
       registrations,
@@ -234,6 +234,8 @@ export const callbackRegistration = async (req, res) => {
       return res.status(404).json({ message: "Registration not found" });
     }
 
+    registration.teamId = await generateTeamId();
+
     // Update the payment status
     registration.payment.paymentStatus = paymentStatus;
     registration.payment.paymentId = paymentId;
@@ -247,3 +249,17 @@ export const callbackRegistration = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+async function generateTeamId() {
+  const lastTeam = await RegistrationModel.findOne({}, { teamId: 1 }) // Project only teamId
+    .sort({ teamId: -1 }) // Sort descending to get the highest teamId
+    .limit(1);
+  
+  if (!lastTeam) {
+    return "1";
+  }
+
+  const nextTeamId = lastTeam ? parseInt(lastTeam.teamId) + 1 : 1; // Increment or start at 1
+
+  return nextTeamId.toString(); // Convert back to string if needed
+}
