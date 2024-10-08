@@ -48,11 +48,14 @@ export const uploadFile = async (req, res, next) => {
     if (fieldname === "type") {
       fileData.used = val;
 
-      if (fileData.used === "Gallery") redisClient.del("Gallery:Gallery");
+      if (fileData.used === "Gallery") {
+        fileData.till = "Permanent";
+        redisClient.del("Gallery:Gallery");
+      }
       if (fileData.used === "AboutUs") redisClient.del("AboutUs:AboutUs");
       if (fileData.used === "Brochure") {
         redisClient.del("Event:Brochure");
-      fileData.till = "Permanent";
+        fileData.till = "Permanent";
       }
     }
   });
@@ -136,46 +139,105 @@ export const uploadFile = async (req, res, next) => {
 
 export const changeFile = async (req, res, next) => {
   const { userId } = req.user;
-  const { fileId, width, length } = req.body;
+  const { fileId } = req.params;
 
-  upload(req, res, async function (err) {
-    if (err instanceof multer.MulterError) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    } else if (err) {
-      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-    }
-
-    // Update the file data in MongoDB
-    const { filename, mimetype, path } = req.file;
-
+  try {
     const fileData = await File.findById(fileId);
-    fileData.name = filename;
-    fileData.type = mimetype;
-    fileData.file = path;
-    fileData.uplodedBy = userId;
 
-    if (length) {
-      fileData.length = length;
-    }
-    if (width) {
-      fileData.width = width;
+    if (!fileData) {
+      return sendError(STATUSCODE.NOT_FOUND, "File not found", next);
     }
 
-    await fileData
-      .save()
-      .then((result) => {
-        // Update data in cache
-        redisClient.set("file:" + fileId, JSON.stringify(result));
-        res.status(200).json({
-          message: "File uploaded successfully",
-          file: result,
-          fileId: result._id,
-        });
-      })
-      .catch((err) => {
-        return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
-      });
-  });
+    if (fileData.uplodedBy.toString() !== userId) {
+      return sendError(STATUSCODE.FORBIDDEN, "Unauthorized", next);
+    }
+
+    // Delete the existing file from Cloudinary
+    try {
+      await deleteImgsFromCloudinary(fileId);
+    } catch (error) {
+      console.log(error);
+    }
+
+    // Now handle the new file upload (similar to uploadFile function)
+    const busboy = Busboy({ headers: req.headers });
+
+    busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+      // Generate a unique filename (optional, but recommended)
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const extension = path.extname(filename.filename.toString());
+      const newFilename = uniqueSuffix + extension;
+
+      // Populate fileData
+      fileData.type = filename.mimeType;
+      fileData.uplodedBy = userId;
+
+      const isImage = filename.mimeType.startsWith("image/");
+
+      const cloudinaryOptions = {
+        folder: "/TechSprint",
+        public_id: fileId.toString(),
+      };
+
+      if (isImage) {
+        cloudinaryOptions.format = "webp";
+        cloudinaryOptions.quality = "auto:good";
+      }
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        cloudinaryOptions,
+        async (error, result) => {
+          if (error) {
+            console.error("Error uploading to Cloudinary:", error);
+            return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
+          }
+          if (result && result.url) {
+            try {
+              // Save the Cloudinary URL to your database
+              fileData.file = result.url;
+
+              const savedFile = await fileData.save();
+
+              // Cache the result
+              redisClient.set(
+                "file:" + savedFile._id.toString(),
+                JSON.stringify(savedFile)
+              );
+
+              res.status(200).json({
+                message: "File uploaded successfully",
+                file: savedFile,
+                fileId: savedFile._id,
+              });
+            } catch (dbError) {
+              console.error("Error saving file data to database:", dbError);
+              return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, dbError, next);
+            }
+          } else {
+            console.error("Unexpected Cloudinary upload result:", result);
+            return sendError(
+              STATUSCODE.INTERNAL_SERVER_ERROR,
+              "File upload failed",
+              next
+            );
+          }
+        }
+      );
+
+      // Pipe the incoming file stream to the Cloudinary upload stream
+      file.pipe(uploadStream);
+    });
+
+    busboy.on("error", (err) => {
+      console.error("Busboy error:", err);
+      return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, err, next);
+    });
+
+    req.pipe(busboy);
+  } catch (error) {
+    console.error("Error updating file:", error);
+    return sendError(STATUSCODE.INTERNAL_SERVER_ERROR, error, next);
+  }
 };
 
 export const downloadFile = async (req, res, next) => {
