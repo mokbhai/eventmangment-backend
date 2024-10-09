@@ -61,10 +61,9 @@ const allowedOrigins = [
 const corsOptionsDelegate = (req, callback) => {
   let corsOptions;
 
-  let isDomainAllowed = whitelist.indexOf(req.header("Origin")) !== -1;
-  let isExtensionAllowed = req.path.endsWith(".jpg");
+  let isDomainAllowed = allowedOrigins.indexOf(req.header("Origin")) !== -1;
 
-  if (isDomainAllowed && isExtensionAllowed) {
+  if (isDomainAllowed) {
     // Enable CORS for this request
     corsOptions = { origin: true };
   } else {
