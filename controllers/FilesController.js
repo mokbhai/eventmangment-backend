@@ -356,7 +356,7 @@ export const deleteFileFunction = async (fileId) => {
 };
 
 export const deleteTempFiles = async (req, res) => {
-  const files = await File.find({ till: "Temprary" });
+  const files = await File.find({ till: "Temporary" });
 
   for (let file of files) {
     // Delete file from filesystem
@@ -373,7 +373,16 @@ export const deleteTempFiles = async (req, res) => {
 };
 
 export const updateFileTill = async (ids, used = "", till = "Permanent") => {
-  ids.forEach(async (id) => {
+  let files;
+
+  // Validate and format photos
+  if (!Array.isArray(ids)) {
+    files = [ids];
+  } else {
+    files = ids;
+  }
+
+  files.forEach(async (id) => {
     try {
       const result = await File.findById(id);
       if (used && used !== "") result.used = used;

@@ -10,7 +10,7 @@ const eventSchema = new Schema(
     photos: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "File",
+        ref: "Files",
         required: [true, "Photos is required"],
       },
     ],
@@ -52,12 +52,12 @@ const eventSchema = new Schema(
     rules: [{ type: String, required: [true, "Rules are required"] }],
     avengerCharacter: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "File",
+      ref: "Files",
       required: [true, "Rules are required"],
     },
     ruleBook: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "File",
+      ref: "Files",
       required: [true, "Rules are required"],
     },
     participants: {
@@ -105,6 +105,7 @@ const eventSchema = new Schema(
   },
   {
     timestamps: true,
+    versionKey: false,
   }
 );
 

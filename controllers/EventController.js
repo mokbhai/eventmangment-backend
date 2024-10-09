@@ -122,9 +122,9 @@ export const createEvent = async (req, res, next) => {
       );
     }
 
-    await updateFileTill(photos, "EventPhotos");
-    await updateFileTill([ruleBook], "RuleBook");
-    await updateFileTill([avengerCharacter], "EventPhotos");
+    updateFileTill(photos, "EventPhotos");
+    updateFileTill([ruleBook], "RuleBook");
+    updateFileTill([avengerCharacter], "EventPhotos");
 
     // Save event to database
     const savedEvent = await newEvent.save();
@@ -151,7 +151,12 @@ export const filterEvents = async (req, res, next) => {
     // Construct filter object
     let filter = { isDeleted: { $ne: true } };
 
-    const events = await EventModel.find(filter);
+    const events = await EventModel.find(filter)
+      .populate({
+        path: "photos",
+        select: "file",
+      })
+      .populate({ path: "avengerCharacter", select: "file" });
 
     const brochure = await getBrochure();
 
@@ -200,20 +205,38 @@ export const updateEvent = async (req, res, next) => {
       });
     }
 
+    if (eventData.hasOwnProperty("photos")) {
+      updateFileTill(prevEvent.photos, "EventPhotos", "Temporary");
+    }
+    if (eventData.hasOwnProperty("ruleBook")) {
+      updateFileTill(prevEvent.ruleBook, "RuleBook", "Temporary");
+    }
+    if (eventData.hasOwnProperty("avengerCharacter")) {
+      updateFileTill(
+        prevEvent.avengerCharacter,
+        "AvengerCharacter",
+        "Temporary"
+      );
+    }
+
     // Update the fields of prevEvent with the new data
     for (const key in eventData) {
       if (eventData.hasOwnProperty(key)) {
         prevEvent[key] = eventData[key];
       }
     }
+    updateFileTill(prevEvent.photos, "EventPhotos");
+    updateFileTill(prevEvent.avengerCharacter, "AvengerCharacter");
+    updateFileTill(prevEvent.ruleBook, "RuleBook");
 
-    await prevEvent.save();
+    const result = await prevEvent.save();
 
-    delEventRedis({ id: "Events" }); // Consider using a more specific key
+    delEventRedis({ id: "Events" });
+    // delEventRedis({ id: prevEvent._id.toString() });
 
     return res.status(STATUSCODE.OK).json({
       success: true,
-      event: prevEvent, // Changed 'events' to 'event' for consistency
+      event: prevEvent,
     });
   } catch (error) {
     next(error);
@@ -226,40 +249,24 @@ export const getEventById = async (req, res, next) => {
     return sendError(STATUSCODE.BAD_REQUEST, "Invalid Event ID", next);
   }
 
-  // Try getting event data from Redis
-  redisClient.get("Event:" + eventId, async (err, redisEvent) => {
-    if (err) {
-      return next(err);
+  try {
+    let dbEvent = await EventModel.findById(eventId);
+
+    if (!dbEvent || dbEvent.isDeleted) {
+      return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
     }
 
-    if (redisEvent) {
-      // If the event data is in the cache, return it
-      return res.status(STATUSCODE.OK).json(JSON.parse(redisEvent));
-    } else {
-      // If the event data is not in the cache, query the database
-      try {
-        let dbEvent = await EventModel.findById(eventId);
+    const brochure = await getBrochure();
 
-        if (!dbEvent || dbEvent.isDeleted) {
-          return sendError(STATUSCODE.NOT_FOUND, "Event not found", next);
-        }
+    dbEvent = {
+      ...dbEvent._doc,
+      brochure,
+    };
 
-        const brochure = await getBrochure();
-
-        dbEvent = {
-          ...dbEvent._doc,
-          brochure,
-        };
-
-        // Store the result in the cache
-        setEventRedis({ eventId, data: dbEvent });
-
-        return res.status(STATUSCODE.OK).json(dbEvent);
-      } catch (error) {
-        return next(error);
-      }
-    }
-  });
+    return res.status(STATUSCODE.OK).json(dbEvent);
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export const deleteEvent = async (req, res, next) => {
