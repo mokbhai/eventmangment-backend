@@ -19,6 +19,7 @@ import xss from "xss-clean";
 import mongoSanitize from "express-mongo-sanitize";
 import STATUSCODE from "./Enums/HttpStatusCodes.js";
 import userAuth from "./middlewares/authMiddleware.js";
+import etagMiddleware from "./config/crypto.js";
 
 //#endregion
 
@@ -80,6 +81,7 @@ app.use(mongoSanitize());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("dev"));
+app.use(etagMiddleware);
 
 /// Api routes
 app.get("/", (req, res, next) => {
