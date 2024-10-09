@@ -54,25 +54,27 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://techsprint.vercel.app",
   "https://techsprint2.vercel.app",
+  "https://techsprint.vercel.app",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-        // Allow the origin or if it's not set (some requests don't have it)
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
+const corsOptionsDelegate = (req, callback) => {
+  let corsOptions;
+
+  let isDomainAllowed = whitelist.indexOf(req.header("Origin")) !== -1;
+  let isExtensionAllowed = req.path.endsWith(".jpg");
+
+  if (isDomainAllowed && isExtensionAllowed) {
+    // Enable CORS for this request
+    corsOptions = { origin: true };
+  } else {
+    // Disable CORS for this request
+    corsOptions = { origin: false };
+  }
+  callback(null, corsOptions);
+};
+
+app.use(cors(corsOptionsDelegate));
 
 // Set the view engine to EJS
 app.set("view engine", "ejs");
