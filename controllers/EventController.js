@@ -232,11 +232,30 @@ export const updateEvent = async (req, res, next) => {
     const result = await prevEvent.save();
 
     delEventRedis({ id: "Events" });
-    // delEventRedis({ id: prevEvent._id.toString() });
 
     return res.status(STATUSCODE.OK).json({
       success: true,
       event: prevEvent,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEventBulk = async (req, res, next) => {
+  try {
+    const prevEvents = await EventModel.find();
+
+    prevEvents.forEach((event) => {
+      event.isDeleted = false;
+      event.deletedBy = undefined;
+
+      event.save();
+    });
+
+    return res.status(STATUSCODE.OK).json({
+      success: true,
+      events: prevEvents,
     });
   } catch (error) {
     next(error);
@@ -287,7 +306,8 @@ export const deleteEvent = async (req, res, next) => {
 
     await event.save();
 
-    delEventRedis(eventId);
+    // delEventRedis(eventId);
+    delEventRedis({ id: "Events" });
 
     res.status(STATUSCODE.OK).json(event);
   } catch (error) {
