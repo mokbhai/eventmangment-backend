@@ -73,7 +73,8 @@ const corsOptionsDelegate = (req, callback) => {
   callback(null, corsOptions);
 };
 
-app.use(cors(corsOptionsDelegate));
+// app.use(cors(corsOptionsDelegate));
+app.use(cors());
 
 // Set the view engine to EJS
 app.set("view engine", "ejs");

@@ -230,10 +230,12 @@ const deleteMessagePermanently = async (req, res, next) => {
   try {
     const { id } = req.params;
     const deletedMessage = await MessageModel.findByIdAndDelete(id);
+
     if (!deletedMessage) {
       return sendError(STATUSCODE.NOT_FOUND, "Message not found", next);
     }
-    return res.status(STATUSCODE.OK).json(deleteMessage);
+
+    return res.status(STATUSCODE.OK).json(deletedMessage);
   } catch (error) {
     next(error);
   }
